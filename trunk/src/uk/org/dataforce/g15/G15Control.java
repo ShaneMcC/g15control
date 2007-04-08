@@ -104,8 +104,11 @@ public class G15Control {
 				System.out.println("Config file not found, default created, please edit the file and change the default settings.");
 				PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configFilename)));
 				out.println("<g15control>");
+				out.println("	<!-- This is the path to the g15lcd pipe -->");
 				out.println("	<composer>/path/to/composer</composer>");
+				out.println("	<!-- This is the text used when loading and as the default window title -->");
 				out.println("	<welcometext>G15Control</welcometext>");
+				out.println("	<!-- This is the 'M' button to enable by default -->");
 				out.println("	<defaultmbutton>1</defaultmbutton>");
 				out.println("</g15control>");
 				out.close();
@@ -179,10 +182,15 @@ public class G15Control {
 			drawSplashText("Loading..");
 			myScreen.waitFor(1000);
 			drawSplashText("Loaded!");
+			if (currentPlugin != null) {
+				myScreen.clearScreen(false);
+				currentPlugin.onActivate();
+			}
 		}
-		
-		myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
-		drawMenu(true);
+		if (currentPlugin == null) {
+			myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
+			drawMenu(true);
+		}
 	}
 	
 	/** Check the remoteControl for a command */
@@ -586,12 +594,16 @@ public class G15Control {
 	 * Load a plugin
 	 *
 	 * @param plugin Class name of plugin
+	 * @return true/false is plugin loaded
 	 */
-	 private void loadPlugin(String plugin) {
-		 if (pluginManager.addPlugin(plugin, plugin)) {
-			 pluginManager.getPlugin(plugin).onLoad(this, myScreen);
-			 allScreens.add(plugin);
-			}
+	private boolean loadPlugin(String plugin) {
+		if (pluginManager.addPlugin(plugin, plugin)) {
+			pluginManager.getPlugin(plugin).onLoad(this, myScreen);
+			allScreens.add(plugin);
+			return true;
+		} else {
+			return false;
+		}
 	 }
 
 	/** 
@@ -604,7 +616,13 @@ public class G15Control {
 		for (Element pluginElement : elements) {
 			pluginName = configFile.getValue(pluginElement);
 			drawSplashText("Loading Plugin: "+pluginName.substring(pluginName.lastIndexOf(".")+1)+"...");
-			loadPlugin(pluginName);
+			
+			if (loadPlugin(pluginName)) {
+				if (configFile.getAttribute(pluginElement, "default") != null) {
+					currentPlugin = pluginManager.getPlugin(pluginName);
+					currentScreen = allScreens.size()-1;
+				}
+			}
 		}
 	}
 	
