@@ -1,0 +1,129 @@
+#Button G1
+"echo "BUTTON G1" | nc -q 0 127.0.0.1 33523"
+    m:0x12 + c:177
+    Mod2 + NoSymbol
+
+#Button G2
+"echo "BUTTON G2" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:152
+    Mod2 + NoSymbol 
+
+#Button G3
+"echo "BUTTON G3" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:190
+    Mod2 + NoSymbol 
+
+#Button G4
+"echo "BUTTON G4" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:208
+    Mod2 + NoSymbol 
+
+#Button G5
+"echo "BUTTON G5" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:129
+    Mod2 + NoSymbol 
+
+#Button G6
+"echo "BUTTON G6" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:130
+    Mod2 + NoSymbol 
+
+#Button G7
+"echo "BUTTON G7" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:231
+    Mod2 + NoSymbol 
+
+#Button G8
+"echo "BUTTON G8" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:209
+    Mod2 + NoSymbol 
+
+#Button G9
+"echo "BUTTON G9" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:210
+    Mod2 + NoSymbol 
+
+#Button G10
+"echo "BUTTON G10" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:136
+    Mod2 + NoSymbol 
+
+#Button G11
+"echo "BUTTON G11" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:220
+    Mod2 + NoSymbol 
+
+#Button G12
+"echo "BUTTON G12" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:143
+    Mod2 + NoSymbol 
+
+#Button G13
+"echo "BUTTON G13" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:246
+    Mod2 + NoSymbol 
+
+#Button G14
+"echo "BUTTON G14" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:251
+    Mod2 + NoSymbol 
+
+#Button G15
+"echo "BUTTON G15" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:137
+    Mod2 + NoSymbol 
+
+#Button G16
+"echo "BUTTON G16" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:138
+    Mod2 + NoSymbol 
+
+#Button G17
+"echo "BUTTON G17" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:182
+    Mod2 + NoSymbol 
+
+#Button G18
+"echo "BUTTON G18" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:183
+    Mod2 + NoSymbol 
+
+#Button M1
+"echo "BUTTON M1" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:184
+    Mod2 + NoSymbol 
+
+#Button M2
+"echo "BUTTON M2" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:93
+    Mod2 + NoSymbol 
+
+#Button M3
+"echo "BUTTON M3" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:131
+    Mod2 + NoSymbol 
+
+#Button Change Screen
+"echo "BUTTON CHG" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:132
+    Mod2 + NoSymbol 
+
+#Button LCD1
+"echo "BUTTON LCD1" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:170
+    Mod2 + NoSymbol 
+
+#Button LCD2
+"echo "BUTTON LCD2" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:219
+    Mod2 + NoSymbol 
+
+#Button LCD3
+"echo "BUTTON LCD3" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:249
+    Mod2 + NoSymbol 
+
+#Button LCD4
+"echo "BUTTON LCD4" | nc -q 0 127.0.0.1 33523"
+    m:0x10 + c:205
+    Mod2 + XF86LaunchC
