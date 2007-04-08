@@ -507,8 +507,10 @@ public class G15Control {
 				callLCD1();
 				drawMainText("Reloading: "+pluginName.substring(pluginName.lastIndexOf('.')+1));
 				drawMainText("");
-				if (pluginManager.reloadPlugin(pluginName)) {
+				final Boolean reloadState = pluginManager.reloadPlugin(pluginName);
+				if (reloadState) {
 					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" reloaded ");
+					pluginManager.getPlugin(pluginName).onLoad(this, myScreen);
 				} else {
 					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to reload ");
 					for (int i = 0; i < allScreens.size(); ++i) {

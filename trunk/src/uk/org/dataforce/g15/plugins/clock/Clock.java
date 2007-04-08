@@ -103,7 +103,7 @@ public class Clock implements Plugin {
 			final String largeSpace = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 			int xPos = 0;
 			if (!drawSeconds) {
-				xPos = ClockFont.LARGE_WIDTH+7;
+				xPos = ClockFont.LARGE_WIDTH+14;
 			}
 			for (int i = 0; i < text.length(); ++i) {
 				if (i > 0) {
