@@ -142,6 +142,7 @@ public class G15Control {
 		}
 		drawTimer.schedule(new DrawTimer(this), 0, 1000);
 		
+		myScreen.setMXLight(0, false);
 		String defaultMButton = configFile.getValue(configFile.findElement("defaultmbutton"));
 		try {
 			changeMButton(Integer.parseInt(defaultMButton));
