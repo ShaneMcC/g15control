@@ -78,7 +78,7 @@ public class Clock implements Plugin {
 	public void onUnload() { }
 	
 	/**
-	 * Called every second for drawing related tasks when this screen is active.
+	 * Called every 1/2 second for drawing related tasks when this screen is active.
 	 */
 	public void onRedraw() {
 		DateFormat dateFormat;

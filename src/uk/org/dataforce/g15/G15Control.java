@@ -76,6 +76,12 @@ public class G15Control {
 	/** Title of this screen. */
 	private String screenTitle = "G15Control";
 	
+	/**
+	 * Countdown (1/2 second intervals) to clear "main" text.
+	 * "main" text is cleared when this is exactly 0
+	 */
+	private int clearMainCount = -1;
+	
 	/** Config File. */
 	private XMLParser configFile;
 	
@@ -140,7 +146,7 @@ public class G15Control {
 			System.out.println("Unable to start RemoteControl, terminating.");
 			exitApp();
 		}
-		drawTimer.schedule(new DrawTimer(this), 0, 1000);
+		drawTimer.schedule(new DrawTimer(this), 0, 500);
 		
 		myScreen.setMXLight(0, false);
 		String defaultMButton = configFile.getValue(configFile.findElement("defaultmbutton"));
@@ -206,7 +212,6 @@ public class G15Control {
 		try {
 			command = myControl.getNextCommand().split(" ");
 		} catch (NullPointerException e) {
-			// processCommand was called more often than it was needed.
 			return;
 		}
 		if (command != null && command.length > 1) {
@@ -221,6 +226,7 @@ public class G15Control {
 				else if (command[1].equals("LCD4")) { callLCD4(); }
 				else {
 					if (mButton == -1 || isMenu) { return; }
+					configFile.reset();
 					ArrayList<Element> elements = configFile.findAllElements("buttons", "M"+mButton, command[1]);
 					String buttonCommand;
 					String commandType;
@@ -234,10 +240,23 @@ public class G15Control {
 							} else if (commandType.equals("title")) {
 								screenTitle = buttonCommand;
 							} else if (commandType.equals("exec")) {
-								System.out.println("exec");
+								configFile.reset();
+								Element tempElement;
+								String execArgs;
+								String execName;
 								configFile.setCurrentElement(commandElement);
-								final String execName = configFile.getValue(configFile.getFirstSubElement("command"));
-								final String execArgs = configFile.getValue(configFile.getFirstSubElement("arguments"));
+								tempElement = configFile.getFirstSubElement("command");
+								if (tempElement == null) { continue; }
+								execName = configFile.getValue(tempElement);
+								drawMediumMainText("Executing: "+execName);
+								clearMainCount = 6;
+								
+								tempElement = configFile.getFirstSubElement("arguments");
+								if (tempElement != null) {
+									execArgs = configFile.getValue(tempElement);
+								} else {
+									execArgs = "";
+								}
 								try {
 									runProcess(execName, execArgs);
 								} catch (IOException e) {
@@ -252,6 +271,8 @@ public class G15Control {
 				}
 			}
 		}
+		// Call it again to make sure we clear the command buffer
+		processCommand();
 	}
 	
 	/**
@@ -265,26 +286,26 @@ public class G15Control {
 		processCommands.add(processName);
 		StringBuilder tempStr = new StringBuilder();
 		String[] bits = processArgs.split(" ");
-		for (String bit : bits) {
-			if (tempStr.length() == 0) {
-				if (bit.charAt(0) != '"') {
-					processCommands.add(bit);
-					System.out.println("Adding: "+bit);
+		if (processArgs.length() > 0) {
+			for (String bit : bits) {
+				if (tempStr.length() == 0) {
+					if (bit.charAt(0) != '"') {
+						processCommands.add(bit);
+					} else {
+						tempStr.append(bit.substring(1));
+					}
 				} else {
-					tempStr.append(bit.substring(1));
-				}
-			} else {
-				if (bit.charAt(bit.length()-1) != '"') {
-					tempStr.append(' '+bit);
-				} else {
-					tempStr.append(' '+bit.substring(0,bit.length()-1));
-					processCommands.add(tempStr.toString());
-					System.out.println("Adding: "+tempStr.toString());
-					tempStr = new StringBuilder();
+					if (bit.charAt(bit.length()-1) != '"') {
+						tempStr.append(' '+bit);
+					} else {
+						tempStr.append(' '+bit.substring(0,bit.length()-1));
+						processCommands.add(tempStr.toString());
+						tempStr = new StringBuilder();
+					}
 				}
 			}
 		}
-		Process p = Runtime.getRuntime().exec((String[])processCommands.toArray(new String [0]));
+		Process p = Runtime.getRuntime().exec(processCommands.toArray(new String[0]));
 	}
 	
 	/** Change the m button in use at this time. */
@@ -314,6 +335,8 @@ public class G15Control {
 	/** Redraw the screen. */
 	private void doRedraw() {
 		drawTime = false;
+		if (clearMainCount >= 0) { --clearMainCount; }
+		if (clearMainCount == 0) { drawMainText(""); }
 		if (currentPlugin != null) {
 			currentPlugin.onRedraw();
 		} else {
@@ -366,9 +389,37 @@ public class G15Control {
 	 * @param text Text to draw
 	 */
 	private void drawMainText(String text) {
-		myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
-		myScreen.drawText(FontSize.LARGE, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, text);
+		if (currentPlugin == null) {
+			myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
+			myScreen.drawText(FontSize.LARGE, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, text);
+		}
 	}
+	
+	/**
+	 * Draw the medium text to the middle of the screen.
+	 * (used by menu and "text" buttons)
+	 *
+	 * @param text Text to draw
+	 */
+	private void drawMediumMainText(String text) {
+		if (currentPlugin == null) {
+			myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
+			myScreen.drawText(FontSize.MEDIUM, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, text);
+		}
+	}	
+	
+	/**
+	 * Draw the small text to the middle of the screen.
+	 * (used by menu and "text" buttons)
+	 *
+	 * @param text Text to draw
+	 */
+	private void drawSmallMainText(String text) {
+		if (currentPlugin == null) {
+			myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
+			myScreen.drawText(FontSize.SMALL, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, text);
+		}
+	}	
 	
 	/**
 	 * Draw the text used for information on the splash screen.
@@ -398,22 +449,7 @@ public class G15Control {
 		myScreen.setBrightnessLevel(2);
 		myScreen.waitFor(100);	
 	}
-	
-	private void drawButtonLabel(String text, int button, boolean selected) {
-		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);
-		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);
-		myScreen.setBrightnessLevel(0);
-		myScreen.waitFor(100);
-		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);
-		myScreen.setBrightnessLevel(0);
-		myScreen.waitFor(100);
-		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);	
-	}
-	
+		
 	/** What todo when LCD1 is pressed. */
 	private void callLCD1() {
 		if (currentPlugin != null) {
