@@ -60,7 +60,7 @@ public class RemoteControl implements Runnable {
 	 */
 	public String getNextCommand()  {
 		synchronized (commandQueue) {
-			return (String)commandQueue.poll();
+			return commandQueue.poll();
 		}
 	}	
 	
