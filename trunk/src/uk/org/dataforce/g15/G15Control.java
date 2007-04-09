@@ -220,15 +220,15 @@ public class G15Control {
 		}
 		if (command != null && command.length > 1) {
 			if (command[0].equals("BUTTON")) {
-				if (command[1].equals("M1")) { changeMButton(1); }
-				else if (command[1].equals("M2")) { changeMButton(2); }
-				else if (command[1].equals("M3")) { changeMButton(3); }
+				if (command[1].equals("M1") && !isMenu) { changeMButton(1); }
+				else if (command[1].equals("M2") && !isMenu) { changeMButton(2); }
+				else if (command[1].equals("M3") && !isMenu) { changeMButton(3); }
 				else if (command[1].equals("CHG")) { changeScreen(); }
 				else if (command[1].equals("LCD1")) { callLCD1(); }
 				else if (command[1].equals("LCD2")) { callLCD2(); }
 				else if (command[1].equals("LCD3")) { callLCD3(); }
 				else if (command[1].equals("LCD4")) { callLCD4(); }
-				else {
+				else if (!isMenu) {
 					if (mButton == -1 || isMenu) { return; }
 					configFile.reset();
 					ArrayList<Element> elements = configFile.findAllElements("buttons", "M"+mButton, command[1]);
