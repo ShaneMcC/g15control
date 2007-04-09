@@ -318,6 +318,8 @@ public class G15Control {
 		if (mButton == newButton) {
 			myScreen.setMXLight(mButton, false);
 			mButton = -1;
+			drawMediumMainText("'M' Buttons Disabled.");
+			clearMainCount = 6;
 		} else {
 			if (newButton < 1 || newButton > 3) {
 				mButton = 1;
@@ -492,7 +494,9 @@ public class G15Control {
 		myMenu.addItem("Reload Config", "RELOADCONFIG");
 		myMenu.addItem("Unload Plugin", "UNLOAD1");
 		myMenu.addItem("Reload Plugin", "RELOAD1");
-		myMenu.addItem("Exit G15 Control", "QUITAPP");
+		if (configFile.findElement("noexit") == null) {
+			myMenu.addItem("Exit G15 Control", "QUITAPP");
+		}
 		myMenu.addItem("Exit Menu", "CLOSEMENU");
 	}
 	
