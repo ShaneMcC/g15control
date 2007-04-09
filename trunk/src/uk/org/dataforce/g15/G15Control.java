@@ -343,6 +343,7 @@ public class G15Control {
 		if (clearMainCount == 0) {
 			screenTitle = defaultScreenTitle;
 			drawMainText("");
+			drawMenu(true);
 		}
 		if (currentPlugin != null) {
 			currentPlugin.onRedraw();
@@ -510,6 +511,7 @@ public class G15Control {
 				drawMainText("");
 				callLCD1();
 				myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Config reloaded ");
+				clearMainCount = 6;
 				myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
 			} else if (myMenu.getItemSubString().equals("UNLOAD1")) {
 				myMenu = new G15ControlMenu("Unload Plugin");
@@ -524,6 +526,7 @@ public class G15Control {
 				callLCD1();
 				drawMainText("Unloading: "+pluginName.substring(pluginName.lastIndexOf('.')+1));
 				drawMainText("");
+				clearMainCount = 6;
 				if (pluginManager.delPlugin(pluginName)) {
 					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" unloaded ");
 				} else {
@@ -551,6 +554,7 @@ public class G15Control {
 				drawMainText("Reloading: "+pluginName.substring(pluginName.lastIndexOf('.')+1));
 				drawMainText("");
 				final Boolean reloadState = pluginManager.reloadPlugin(pluginName);
+				clearMainCount = 6;
 				if (reloadState) {
 					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" reloaded ");
 					pluginManager.getPlugin(pluginName).onLoad(this, myScreen);
