@@ -485,12 +485,14 @@ public class G15Control {
 				drawMainText("");
 				drawMenu(false);
 				doRedraw();
+				myScreen.setMXLight(mButton, true);
 			} else {
 				isMenu = true;
 				menuButtons = new String[]{"Menu", "Ok", "", "[<]", "[>]"};
 				oldTitle = screenTitle;
 				oldMButton = mButton;
 				mButton = -1;
+				myScreen.setMXLight(0, false);
 				if (myMenu != null) { myMenu.reset(); }
 				drawMenu(false);
 				doRedraw();
