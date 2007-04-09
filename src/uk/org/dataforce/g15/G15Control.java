@@ -329,10 +329,14 @@ public class G15Control {
 			clearMainCount = 6;
 		} else {
 			if (newButton < 1 || newButton > 3) {
-				mButton = 1;
-			} else {
-				mButton = newButton;
+				newButton = 1;
 			}
+			
+			if (mButton == -1) {
+				drawMediumMainText("'M' Buttons Enabled ("+newButton+").");
+			}
+			mButton = newButton;
+			
 			myScreen.setMXLight(mButton, true);
 			if (oldButton > 0) {
 				myScreen.setMXLight(oldButton, false);
