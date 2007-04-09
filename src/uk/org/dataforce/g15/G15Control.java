@@ -76,6 +76,9 @@ public class G15Control {
 	/** Title of this screen. */
 	private String screenTitle = "G15Control";
 	
+	/** Default Title of screens. */
+	private String defaultScreenTitle = null;
+	
 	/**
 	 * Countdown (1/2 second intervals) to clear "main" text.
 	 * "main" text is cleared when this is exactly 0
@@ -112,8 +115,8 @@ public class G15Control {
 				out.println("<g15control>");
 				out.println("	<!-- This is the path to the g15lcd pipe -->");
 				out.println("	<composer>/path/to/composer</composer>");
-				out.println("	<!-- This is the text used when loading and as the default window title -->");
-				out.println("	<welcometext>G15Control</welcometext>");
+//				out.println("	<!-- This is the text used when loading and as the default window title -->");
+//				out.println("	<welcometext>G15Control</welcometext>");
 				out.println("	<!-- This is the 'M' button to enable by default -->");
 				out.println("	<defaultmbutton>1</defaultmbutton>");
 				out.println("</g15control>");
@@ -174,8 +177,9 @@ public class G15Control {
 		myScreen.clearScreen(false);
 		myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
 		
-		screenTitle = configFile.getValue(configFile.findElement("welcometext"));
+//		screenTitle = configFile.getValue(configFile.findElement("welcometext"));
 		if (screenTitle == null) { screenTitle = "G15Control"; }
+		if (defaultScreenTitle == null) { defaultScreenTitle = screenTitle; }
 		
 		if (isFirst) {
 			drawSplashText("Loading..");
@@ -336,7 +340,10 @@ public class G15Control {
 	private void doRedraw() {
 		drawTime = false;
 		if (clearMainCount >= 0) { --clearMainCount; }
-		if (clearMainCount == 0) { drawMainText(""); }
+		if (clearMainCount == 0) {
+			screenTitle = defaultScreenTitle;
+			drawMainText("");
+		}
 		if (currentPlugin != null) {
 			currentPlugin.onRedraw();
 		} else {
@@ -577,7 +584,7 @@ public class G15Control {
 			
 			myScreen.clearScreen(false);
 			myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
-			drawMainText(screenTitle);
+			drawMainText(defaultScreenTitle);
 			myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, "Ended at: "+dateFormat.format(new Date()));
 			myScreen.silentDraw();
 		}
