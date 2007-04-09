@@ -594,6 +594,7 @@ public class G15Control {
 			myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
 			drawMainText(defaultScreenTitle);
 			myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, "Ended at: "+dateFormat.format(new Date()));
+			myScreen.setMXLight(0, false);
 			myScreen.silentDraw();
 		}
 		System.exit(1);
