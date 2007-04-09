@@ -243,6 +243,13 @@ public class G15Control {
 								drawMainText(buttonCommand);
 							} else if (commandType.equals("title")) {
 								screenTitle = buttonCommand;
+							} else if (commandType.equals("status")) {
+									drawMenu(true);
+									myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, buttonCommand+" ");
+									myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
+							} else if (commandType.equals("timeout")) {
+								try {	clearMainCount = Integer.parseInt(buttonCommand); }
+								catch (NumberFormatException e) { }
 							} else if (commandType.equals("exec")) {
 								configFile.reset();
 								Element tempElement;
