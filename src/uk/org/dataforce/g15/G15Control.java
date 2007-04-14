@@ -237,6 +237,7 @@ public class G15Control {
 					if (elements == null || elements.size() == 0) {
 						drawMenu(true);
 						drawStatusText("M"+mButton+'-'+command[1]+" Not Assigned");
+						clearMainCount = 2;
 					} else {
 						for (Element commandElement : elements) {
 							commandType = configFile.getAttribute(commandElement, "type");
