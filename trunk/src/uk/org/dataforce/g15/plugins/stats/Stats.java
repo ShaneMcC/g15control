@@ -47,9 +47,6 @@ public class Stats implements Plugin {
 	/** The controller. */
 	G15Control myController;	
 	
-	/** clearScreen before drawing or not. */
-	boolean clearScreen = false;	
-
 	/**
 	 * Called when the plugin is loaded.
 	 *
@@ -70,21 +67,17 @@ public class Stats implements Plugin {
 	 * Called every 1/2 second for drawing related tasks when this screen is active.
 	 */
 	public void onRedraw() {
-		if (clearScreen) {
-			myScreen.clearScreen(false);
-			clearScreen = false;
-		}
-
+		myScreen.clearScreen(false);
 		final ArrayList<String> outputString = new ArrayList<String>();
-
+	
 		final DateFormat dateFormat = new SimpleDateFormat("EE dd/MM/yyyy HH:mm:ss zz");
 		final String date = dateFormat.format(new Date());
-
+	
 		String[] uptime;
 		try {
 			BufferedReader in = new BufferedReader(new FileReader("/proc/uptime"));
 			uptime = in.readLine().split(" ");
-	    in.close();
+			in.close();
 		} catch (IOException e) {
 			uptime = new String[]{"0.0", "0.0"};
 		}
@@ -100,12 +93,12 @@ public class Stats implements Plugin {
 		try {
 			BufferedReader in = new BufferedReader(new FileReader("/proc/loadavg"));
 			load = in.readLine().split(" ");
-	    in.close();
+			in.close();
 		} catch (IOException e) {
 			load = new String[]{"0.00", "0.00", "0.00"};
 		}
 		outputString.add("Load: "+load[0]+", "+load[1]+", "+load[2]);
-
+	
 		myScreen.drawText(FontSize.SMALL, new Point(0, 0), G15Position.CENTER, outputString.toArray(new String[0]));
 		myScreen.silentDraw();
 	}
