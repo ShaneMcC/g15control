@@ -358,14 +358,14 @@ public class G15Control {
 	private void doRedraw() {
 		drawTime = false;
 		if (clearMainCount >= 0) { --clearMainCount; }
-		if (currentPlugin != null) {
-			currentPlugin.onRedraw();
-		} else {
 			if (clearMainCount == 0) {
 				screenTitle = defaultScreenTitle;
 				drawMainText("");
 				drawMenu(true);
-			}
+			}		
+		if (currentPlugin != null) {
+			currentPlugin.onRedraw();
+		} else {
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 	
 			myScreen.drawText(FontSize.SMALL, new Point(126, 2), G15Position.LEFT, dateFormat.format(new Date()));
