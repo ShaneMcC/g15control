@@ -234,48 +234,51 @@ public class G15Control {
 					ArrayList<Element> elements = configFile.findAllElements("buttons", "M"+mButton, command[1]);
 					String buttonCommand;
 					String commandType;
-					for (Element commandElement : elements) {
-						commandType = configFile.getAttribute(commandElement, "type");
-						buttonCommand = configFile.getValue(commandElement);
-						if (commandType == null) { commandType = "exec"; }
-						if (commandType.equals("exec") || buttonCommand != null) {
-							if (commandType.equals("text")) {
-								drawMainText(buttonCommand);
-							} else if (commandType.equals("title")) {
-								screenTitle = buttonCommand;
-							} else if (commandType.equals("status")) {
-									drawMenu(true);
-									myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, buttonCommand+" ");
-									myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
-							} else if (commandType.equals("timeout")) {
-								try {	clearMainCount = Integer.parseInt(buttonCommand); }
-								catch (NumberFormatException e) { }
-							} else if (commandType.equals("exec")) {
-								configFile.reset();
-								Element tempElement;
-								String execArgs;
-								String execName;
-								configFile.setCurrentElement(commandElement);
-								tempElement = configFile.getFirstSubElement("command");
-								if (tempElement == null) { continue; }
-								execName = configFile.getValue(tempElement);
-								drawMediumMainText("Executing: "+execName);
-								clearMainCount = 6;
-								
-								tempElement = configFile.getFirstSubElement("arguments");
-								if (tempElement != null) {
-									execArgs = configFile.getValue(tempElement);
+					if (elements == null || elements.size() == 0) {
+						drawMenu(true);
+						drawStatusText("M"+mButton+'-'+command[1]+" Not Assigned");
+					} else {
+						for (Element commandElement : elements) {
+							commandType = configFile.getAttribute(commandElement, "type");
+							buttonCommand = configFile.getValue(commandElement);
+							if (commandType == null) { commandType = "exec"; }
+							if (commandType.equals("exec") || buttonCommand != null) {
+								if (commandType.equals("text")) {
+									drawMainText(buttonCommand);
+								} else if (commandType.equals("title")) {
+									screenTitle = buttonCommand;
+								} else if (commandType.equals("status")) {
+									drawStatusText(buttonCommand);
+								} else if (commandType.equals("timeout")) {
+									try {	clearMainCount = Integer.parseInt(buttonCommand); }
+									catch (NumberFormatException e) { }
+								} else if (commandType.equals("exec")) {
+									configFile.reset();
+									Element tempElement;
+									String execArgs;
+									String execName;
+									configFile.setCurrentElement(commandElement);
+									tempElement = configFile.getFirstSubElement("command");
+									if (tempElement == null) { continue; }
+									execName = configFile.getValue(tempElement);
+									drawMediumMainText("Executing: "+execName);
+									clearMainCount = 6;
+									
+									tempElement = configFile.getFirstSubElement("arguments");
+									if (tempElement != null) {
+										execArgs = configFile.getValue(tempElement);
+									} else {
+										execArgs = "";
+									}
+									try {
+										runProcess(execName, execArgs);
+									} catch (IOException e) {
+										drawMainText("Exec Command Failed");
+										flashLCD();
+									}
 								} else {
-									execArgs = "";
+									System.out.println("Unknown command type: "+commandType);
 								}
-								try {
-									runProcess(execName, execArgs);
-								} catch (IOException e) {
-									drawMainText("Exec Command Failed");
-									flashLCD();
-								}
-							} else {
-								System.out.println("Unknown command type: "+commandType);
 							}
 						}
 					}
@@ -334,6 +337,7 @@ public class G15Control {
 			
 			if (mButton == -1) {
 				drawMediumMainText("'M' Buttons Enabled ("+newButton+").");
+				clearMainCount = 6;
 			}
 			mButton = newButton;
 			
@@ -353,14 +357,14 @@ public class G15Control {
 	private void doRedraw() {
 		drawTime = false;
 		if (clearMainCount >= 0) { --clearMainCount; }
-		if (clearMainCount == 0) {
-			screenTitle = defaultScreenTitle;
-			drawMainText("");
-			drawMenu(true);
-		}
 		if (currentPlugin != null) {
 			currentPlugin.onRedraw();
 		} else {
+			if (clearMainCount == 0) {
+				screenTitle = defaultScreenTitle;
+				drawMainText("");
+				drawMenu(true);
+			}
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 	
 			myScreen.drawText(FontSize.SMALL, new Point(126, 2), G15Position.LEFT, dateFormat.format(new Date()));
@@ -380,25 +384,41 @@ public class G15Control {
 	 * @param drawNow Should this be drawn now?
 	 */
 	private void drawMenu(boolean drawNow) {
-		myScreen.fillArea(new Point(3,35), new Point(myScreen.getWidth()-3, 41), false);
-		myScreen.drawLine(new Point(0,34), new Point(myScreen.getWidth(), 34), true);
-		myScreen.drawText(FontSize.SMALL, new Point(11, 36), G15Position.LEFT, menuButtons[0]);
-		myScreen.drawText(FontSize.SMALL, new Point(42, 36), G15Position.LEFT, menuButtons[1]);
-		if (!isMenu) {
-			myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, menuButtons[2]);
-		} else {
-			if (myMenu == null) { createMenu(); }
-			myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, "["+myMenu.getItemNumber()+'/'+myMenu.count()+"]");
+		if (currentPlugin == null) {
+			myScreen.fillArea(new Point(3,35), new Point(myScreen.getWidth()-3, 41), false);
+			myScreen.drawLine(new Point(0,34), new Point(myScreen.getWidth(), 34), true);
+			myScreen.drawText(FontSize.SMALL, new Point(11, 36), G15Position.LEFT, menuButtons[0]);
+			myScreen.drawText(FontSize.SMALL, new Point(42, 36), G15Position.LEFT, menuButtons[1]);
+			if (!isMenu) {
+				myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, menuButtons[2]);
+			} else {
+				if (myMenu == null) { createMenu(); }
+				myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, "["+myMenu.getItemNumber()+'/'+myMenu.count()+"]");
+			}
+		
+			myScreen.drawText(FontSize.SMALL, new Point(110, 36), G15Position.LEFT, menuButtons[3]);
+			myScreen.drawText(FontSize.SMALL, new Point(135, 36), G15Position.LEFT, menuButtons[4]);
+			if (isMenu) {
+				if (myMenu == null) { createMenu(); }
+				screenTitle = "Menu :: "+myMenu;
+				drawMainText(myMenu.getItemName());
+			}
+			if (drawNow) {
+				myScreen.silentDraw();
+			}
 		}
+	}
 	
-		myScreen.drawText(FontSize.SMALL, new Point(110, 36), G15Position.LEFT, menuButtons[3]);
-		myScreen.drawText(FontSize.SMALL, new Point(135, 36), G15Position.LEFT, menuButtons[4]);
-		if (isMenu) {
-			if (myMenu == null) { createMenu(); }
-			screenTitle = "Menu :: "+myMenu;
-			drawMainText(myMenu.getItemName());
-		}
-		if (drawNow) {
+	/**
+	 * Draw the small text used in the status bar.
+	 *
+	 * @param text Text to draw
+	 */
+	private void drawStatusText(String text) {
+		if (currentPlugin == null) {
+			drawMenu(true);
+			myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, text+" ");
+			myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
 			myScreen.silentDraw();
 		}
 	}
@@ -527,7 +547,7 @@ public class G15Control {
 				loadAllPlugins();
 				drawMainText("");
 				callLCD1();
-				myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Config reloaded ");
+				drawStatusText("Config reloaded");
 				clearMainCount = 6;
 				myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
 			} else if (myMenu.getItemSubString().equals("UNLOAD1")) {
@@ -545,9 +565,9 @@ public class G15Control {
 				drawMainText("");
 				clearMainCount = 6;
 				if (pluginManager.delPlugin(pluginName)) {
-					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" unloaded ");
+					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" unloaded");
 				} else {
-					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to unload ");
+					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to unload");
 				}
 				for (int i = 0; i < allScreens.size(); ++i) {
 					if (allScreens.get(i).equalsIgnoreCase(pluginName)) {
@@ -573,10 +593,10 @@ public class G15Control {
 				final Boolean reloadState = pluginManager.reloadPlugin(pluginName);
 				clearMainCount = 6;
 				if (reloadState) {
-					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" reloaded ");
+					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" reloaded");
 					pluginManager.getPlugin(pluginName).onLoad(this, myScreen);
 				} else {
-					myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.RIGHT, "Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to reload ");
+					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to reload");
 					for (int i = 0; i < allScreens.size(); ++i) {
 						if (allScreens.get(i).equalsIgnoreCase(pluginName)) {
 							allScreens.remove(i);
