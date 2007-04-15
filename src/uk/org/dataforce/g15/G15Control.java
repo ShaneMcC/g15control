@@ -35,10 +35,13 @@ import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import org.w3c.dom.Element;
+
 import uk.org.dataforce.g15.plugins.Plugin;
 import uk.org.dataforce.g15.plugins.PluginManager;
 
-import org.w3c.dom.Element;
+import uk.org.dataforce.g15.process.ProcessDetails;
+import uk.org.dataforce.g15.process.ProcessHandler;
 
 /**
  * Application to control G15 LCD.
@@ -79,6 +82,11 @@ public class G15Control {
 	/** Default Title of screens. */
 	private String defaultScreenTitle = null;
 	
+	/** G15Composer ProcessID. */
+	String composerProcess;
+	/** Location used when we spawn our own G15Composer. */
+	String myComposerLocation = "";
+	
 	/**
 	 * Countdown (1/2 second intervals) to clear "main" text.
 	 * "main" text is cleared when this is exactly 0
@@ -113,8 +121,13 @@ public class G15Control {
 				System.out.println("Config file not found, default created, please edit the file and change the default settings.");
 				PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configFilename)));
 				out.println("<g15control>");
-				out.println("	<!-- This is the path to the g15lcd pipe -->");
-				out.println("	<composer>/path/to/composer</composer>");
+				out.println("	<!-- This is the path to the g15composer pipe. -->");
+				out.println("	<!-- If this has attribute exec then this is taken to be the path to -->");
+				out.println("	<!-- the g15composer binary and not to an exisitng pipe. -->");
+				out.println("	<!-- If given a binary, a pipe will be created in /tmp -->");
+				out.println("	<!-- if the value of this is empty, then we do not use the composer and talk -->");
+				out.println("	<!-- to g15daemon directly. (Experimental and unfinished!!) -->");
+				out.println("	<composer exec=\"\">/usr/bin/g15composer</composer>");
 //				out.println("	<!-- This is the text used when loading and as the default window title -->");
 //				out.println("	<welcometext>G15Control</welcometext>");
 				out.println("	<!-- This is the 'M' button to enable by default -->");
@@ -131,10 +144,20 @@ public class G15Control {
 			System.out.println("Sorry, this application does not yet run on this OS.");
 			System.exit(0);
 		} else {
-			final String composerLocation = configFile.getValue(configFile.findElement("composer"));
+			String composerLocation = configFile.getValue(configFile.findElement("composer"));
 			if (composerLocation != null && new File(configFilename).exists()) {
-				System.out.println("Using "+composerLocation+" for g15composer.");
-				myScreen = new G15WrapperLinux(composerLocation);
+				if (composerLocation.equals("")) {
+					System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL AND UNFINISHED!!]");
+					myScreen = new G15WrapperLinuxNoComposer();
+				} else {
+					System.out.println("Using "+composerLocation+" for g15composer.");
+					if (configFile.getAttribute(configFile.findElement("composer"), "exec") != null) {
+						// We need to spawn the g15composer ourself.
+						startComposer();
+					} else {
+						myScreen = new G15WrapperLinux(composerLocation);
+					}
+				}
 			} else {
 				System.out.println("G15 Composer not found. Please make sure the <composer>/path/to/pipe</composer> element is in the config file.");
 				System.exit(0);
@@ -165,6 +188,36 @@ public class G15Control {
 			if (gotCommand) { processCommand(); }
 			if (drawTime) { doRedraw(); }
 			try { Thread.sleep(1); } catch (InterruptedException e) { }
+		}
+	}
+	
+	/**
+	 * This starts the G15Composer process if needed.
+	 */
+	private void startComposer() {
+		final String composerApp = configFile.getValue(configFile.findElement("composer"));
+		if (composerApp == null) {
+			System.out.println("G15 Composer not found. Please make sure the <composer>/path/to/pipe</composer> element is in the config file.");
+			System.exit(0);
+		} else if (!composerApp.equals("")) {
+			System.out.println("Creating g15composer..");
+			if (myComposerLocation != "") {
+				File f = new File(myComposerLocation);
+				if (f.exists()) {
+					f.delete();
+				}
+			}
+			
+			myComposerLocation = "/tmp/g15control.composer."+System.currentTimeMillis();
+			System.out.println("\tUsing binary: "+composerApp);
+			try {
+				composerProcess = ProcessHandler.runProcess(composerApp, myComposerLocation);
+			} catch (IOException e) {
+				System.out.println("\tCreation failed. Terminating!");
+				System.exit(0);
+			}
+			System.out.println("\tG15Composer created at: "+myComposerLocation);
+			myScreen = new G15WrapperLinux(myComposerLocation);
 		}
 	}
 	
@@ -272,7 +325,7 @@ public class G15Control {
 										execArgs = "";
 									}
 									try {
-										runProcess(execName, execArgs);
+										ProcessHandler.runProcess(execName, execArgs);
 									} catch (IOException e) {
 										drawMainText("Exec Command Failed");
 										flashLCD();
@@ -288,39 +341,6 @@ public class G15Control {
 		}
 		// Call it again to make sure we clear the command buffer
 		processCommand();
-	}
-	
-	/**
-	 * Run a process.
-	 *
-	 * @param processName the Name of the process
-	 * @param processArgs the arguments for the process
-	 */
-	private void runProcess(String processName, String processArgs) throws IOException {
-		ArrayList<String> processCommands = new ArrayList<String>();
-		processCommands.add(processName);
-		StringBuilder tempStr = new StringBuilder();
-		String[] bits = processArgs.split(" ");
-		if (processArgs.length() > 0) {
-			for (String bit : bits) {
-				if (tempStr.length() == 0) {
-					if (bit.charAt(0) != '"') {
-						processCommands.add(bit);
-					} else {
-						tempStr.append(bit.substring(1));
-					}
-				} else {
-					if (bit.charAt(bit.length()-1) != '"') {
-						tempStr.append(' '+bit);
-					} else {
-						tempStr.append(' '+bit.substring(0,bit.length()-1));
-						processCommands.add(tempStr.toString());
-						tempStr = new StringBuilder();
-					}
-				}
-			}
-		}
-		Process p = Runtime.getRuntime().exec(processCommands.toArray(new String[0]));
 	}
 	
 	/** Change the m button in use at this time. */
@@ -357,6 +377,13 @@ public class G15Control {
 	/** Redraw the screen. */
 	private void doRedraw() {
 		drawTime = false;
+		
+		if (ProcessHandler.getProcess(composerProcess) == null) {
+			startComposer();
+			drawMe(true);
+			return;
+		}
+		
 		if (clearMainCount >= 0) { --clearMainCount; }
 			if (clearMainCount == 0) {
 				screenTitle = defaultScreenTitle;

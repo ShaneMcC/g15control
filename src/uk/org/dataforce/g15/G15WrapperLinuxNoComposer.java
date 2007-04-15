@@ -24,71 +24,107 @@
 package uk.org.dataforce.g15;
 
 import java.awt.Point;
+import java.net.Socket;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 
 /**
- * Base class for all LCD Wrappers.
- * All wrapper msut implement the abstract methods here, and may implement
- * additional methods if they desire.
+ * Linux commands for LCD Drawing.
+ * This class relies on g15composer
  */
-public abstract class G15Wrapper {
-	protected static final int LCD_WIDTH = 159; // 0-159
-	protected static final int LCD_HEIGHT = 42; // 0-42
-	
-	/** Get the width of the LCD. */
-	public static final int getWidth() { return LCD_WIDTH; }
-	
-	/** Get the Height of the LCD. */
-	public static final int getHeight() { return LCD_HEIGHT; }	
-	
-	/** Get the point for the top-left of the screen */
-	public static final Point getTopLeftPoint() { return new Point(0, 0); }	
-	
-	/** Get the point for the top-right of the screen */
-	public static final Point getTopRightPoint() { return new Point(LCD_WIDTH, 0); }	
-	
-	/** Get the point for the bottom-right of the screen */
-	public static final Point getBottomRightPoint() { return new Point(LCD_WIDTH, LCD_HEIGHT); }	
-	
-	/** Get the point for the bottom-left of the screen */
-	public static final Point getBottomLeftPoint() { return new Point(0, LCD_HEIGHT); }
+public class G15WrapperLinuxNoComposer extends G15Wrapper {
+	/** This is the socket used for reading from/writing to the Daemon. */
+	private Socket socket;
+	/** Used for writing to the daemon. */
+	private PrintWriter out;
+	/** Used for reading from the daemon. */
+	private BufferedReader in;
+
+	/** Screen Map [X][Y]. */
+	char[][] screenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
+	char[][] oldScreenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
+
 	
 	/**
-	 * Sleep for given numer of milliseconds
+	 * Create a new Linux G15 LCD Wrapper.
 	 *
-	 * @param number of milliseconds to sleep for.
+	 * @param pipeLocation Location of g15 socket file
 	 */
-	public static final void waitFor(long delay) {
+	public G15WrapperLinuxNoComposer() {
 		try {
-			Thread.sleep(delay);
-		} catch (InterruptedException e) {}
+			socket = new Socket("127.0.0.1", 15550);
+			out = new PrintWriter(socket.getOutputStream(), true);
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		} catch (Exception e) {
+		}
+		out.print("GBUF");
+		clearScreen(false);
 	}
-	
-	/** Clear the drawing commands. */
-	public abstract void clear();
-	
+
+	/**
+	 * Convert a boolean into a char
+	 *
+	 * @param bool Boolean to convert
+	 * @return 0 for false, 1 for true.
+	 */
+	private char convertBoolean(boolean bool) {
+		if (bool == true) {
+			return (char)0;
+		} else {
+			return (char)1;
+		}
+	}
+
+	/** Reset the screenMap. */
+	public void clear() {
+		for (int x = 0; x <= LCD_WIDTH ; ++x) {
+			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
+				screenMap[x][y] = oldScreenMap[x][y];
+			}
+		}
+	}
+
 	/**
 	 * Draw to the screen
 	 *
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
-	public abstract void draw() throws IOException;
+	public void draw() throws IOException {
+		int i = 0;
+		for (int x = 0; x <= LCD_WIDTH ; ++x) {
+			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
+				oldScreenMap[x][y] = screenMap[x][y];
+				out.printf("%c",screenMap[x][y]);
+			}
+		}
+	}
 	
 	/**
 	 * Draw to the screen without throwing an exception.
 	 *
 	 * @return true if draw was successful, else false
 	 */
-	public abstract boolean silentDraw();
-	
+	public boolean silentDraw() {
+		try {
+			draw();
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
+	}	
+
 	/**
 	 * Draw a line of text in the default position.
 	 *
 	 * @param size FontSize of text to draw.
 	 * @param text String[] of lines to draw
 	 */
-	public abstract void drawText(FontSize size, String[] text);
-	
+	public void drawText(FontSize size, String[] text) {
+
+	}
+
 	/**
 	 * Draw a line of text to a specific position.
 	 *
@@ -97,7 +133,9 @@ public abstract class G15Wrapper {
 	 * @param position G15Position to draw text (left, right, center)
 	 * @param text String[] of lines to draw
 	 */
-	public abstract void drawText(FontSize size, Point point, G15Position position, String[] text);
+	public void drawText(FontSize size, Point point, G15Position position, String[] text) {
+	
+	}
 	
 	/**
 	 * Draw a line of text in the default position.
@@ -105,8 +143,10 @@ public abstract class G15Wrapper {
 	 * @param size FontSize of text to draw.
 	 * @param text line to draw
 	 */
-	public abstract void drawText(FontSize size, String text);
-	
+	public void drawText(FontSize size, String text) {
+
+	}
+
 	/**
 	 * Draw a line of text to a specific position.
 	 *
@@ -115,8 +155,10 @@ public abstract class G15Wrapper {
 	 * @param position G15Position to draw text (left, right, center)
 	 * @param text line to draw
 	 */
-	public abstract void drawText(FontSize size, Point point, G15Position position, String text);
-		
+	public void drawText(FontSize size, Point point, G15Position position, String text) {
+
+	}
+
 	/**
 	 * Loads a font into a font slot.
 	 *
@@ -124,8 +166,10 @@ public abstract class G15Wrapper {
 	 * @param size Size of font
 	 * @param pathToFont Path to font file
 	 */
-	public abstract void loadFont(int fontSlot, FontSize size, String pathToFont);
-	
+	public void loadFont(int fontSlot, FontSize size, String pathToFont) {
+
+	}
+
 	/**
 	 * Draw text using specified font
 	 *
@@ -136,8 +180,10 @@ public abstract class G15Wrapper {
 	 * @param position Position for text
 	 * @param text Text to output
 	 */
-	public abstract void drawFont(int fontSlot, FontSize size, Point point, boolean isBlack, G15Position position, String[] text);
-	
+	public void drawFont(int fontSlot, FontSize size, Point point, boolean isBlack, G15Position position, String[] text) {
+
+	}
+
 	/**
 	 * Draws a pixel image of the given Width and Height at the given point
 	 *
@@ -146,23 +192,33 @@ public abstract class G15Wrapper {
 	 * @param height height of image
 	 * @param pixels String containing image as a string of 0's and 1's (0 = white, 1 = black)
 	 */
-	public abstract void drawPixels(Point point, int width, int height, String pixels);
-	
+	public void drawPixels(Point point, int width, int height, String pixels) {
+
+	}
+
 	/**
 	 * Set the colour of the pixel at a given point
 	 *
 	 * @param point Point to set pixel at
 	 * @param isBlack True to set to black, false to set to white
 	 */
-	public abstract void setPixelColour(Point point, boolean isBlack);
-	
+	public void setPixelColour(Point point, boolean isBlack) {
+		screenMap[(int)point.getX()][(int)point.getY()] = convertBoolean(isBlack);
+	}
+
 	/**
 	 * Clear the screen and set it all to a specified colour
 	 *
 	 * @param isBlack True to set to black, false to set to white
 	 */
-	public abstract void clearScreen(boolean isBlack);
-	
+	public void clearScreen(boolean isBlack) {
+		for (int x = 0; x <= LCD_WIDTH ; ++x) {
+			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
+				screenMap[x][y] = convertBoolean(isBlack);
+			}
+		}
+	}
+
 	/**
 	 * Fill a specified area in either white or black
 	 *
@@ -170,16 +226,20 @@ public abstract class G15Wrapper {
 	 * @param point2 Point to finish at for area
 	 * @param isBlack True to set to black, false to set to white
 	 */
-	public abstract void fillArea(Point point1, Point point2, boolean isBlack);
-	
+	public void fillArea(Point point1, Point point2, boolean isBlack) {
+
+	}
+
 	/**
 	 * Reverse all the pixels in a specific area
 	 *
 	 * @param point1 Point to start at for area
 	 * @param point2 Point to finish at for area
 	 */
-	public abstract void reversePixels(Point point1, Point point2);
+	public void reversePixels(Point point1, Point point2) {
 	
+	}
+
 	/**
 	 * Draw a box
 	 *
@@ -188,8 +248,10 @@ public abstract class G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 * @param thickness Thickness of line
 	 */
-	public abstract void drawBox(Point point1, Point point2, boolean isBlack, int thickness);
-	
+	public void drawBox(Point point1, Point point2, boolean isBlack, int thickness) {
+
+	}
+
 	/**
 	 * Draw a line
 	 *
@@ -197,8 +259,9 @@ public abstract class G15Wrapper {
 	 * @param point2 Point to finish at for line
 	 * @param isBlack True to set to black, false to set to white
 	 */
-	public abstract void drawLine(Point point1, Point point2, boolean isBlack);
-	
+	public void drawLine(Point point1, Point point2, boolean isBlack) {
+	}
+
 	/**
 	 * Draw a circle
 	 *
@@ -207,8 +270,10 @@ public abstract class G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 * @param filled Is the circle filled or not
 	 */
-	public abstract void drawCircle(Point center, int radius, boolean isBlack, boolean filled);
-	
+	public void drawCircle(Point center, int radius, boolean isBlack, boolean filled) {
+
+	}
+
 	/**
 	 * Draw a rounded box
 	 *
@@ -217,34 +282,58 @@ public abstract class G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 * @param filled Is the box filled or not
 	 */
-	public abstract void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled);
-	
+	public void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled) {
+
+	}
+
 	/**
-	 * Set screen to foreground or background
+	 * Draw a progress bar
 	 *
-	 * @param position Position of screen
+	 * @param point1 Point to start at
+	 * @param point2 point to finish at
+	 * @param isBlack True to set to black, false to set to white
+	 * @param position Position of the bar
+	 * @param maxPosition Max Position of the bar
+	 * @param barType Type of progress bar
 	 */
-	public abstract void screenPosition(G15ScreenPosition position);
-	
+	public void drawProgressBar(Point point1, Point point2, boolean isBlack, int position, int maxPosition, ProgressBarType barType) {
+
+	}
+
 	/**
 	 * Set the MX Light on/off.
 	 *
 	 * @param light Which light to set (0 = all, 1,2,3 = M1 M2 M3)
 	 * @param setOn true to turn on, false to turn off.
 	 */
-	public abstract boolean setMXLight(int light, boolean setOn);
+	public boolean setMXLight(int light, boolean setOn) {
+		return false;
+	}
 	
 	/**
 	 * Set LCD Contrast Level.
 	 *
 	 * @param level Contrast level, (0 1 or 2)
 	 */
-	public abstract boolean setContrastLevel(int level);
+	public boolean setContrastLevel(int level) {
+		return false;
+	}
 	
 	/**
 	 * Set LCD Brightness Level.
 	 *
 	 * @param level Brightness level, (0 1 or 2)
 	 */
-	public abstract boolean setBrightnessLevel(int level);
+	public boolean setBrightnessLevel(int level) {
+		return false;
+	}
+
+	/**
+	 * Set screen to foreground or background
+	 *
+	 * @param position Position of screen
+	 */
+	public void screenPosition(G15ScreenPosition position) {
+
+	}
 }
