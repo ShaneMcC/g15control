@@ -385,11 +385,12 @@ public class G15Control {
 		}
 		
 		if (clearMainCount >= 0) { --clearMainCount; }
-			if (clearMainCount == 0) {
-				screenTitle = defaultScreenTitle;
-				drawMainText("");
-				drawMenu(true);
-			}		
+		if (clearMainCount == 0) {
+			screenTitle = defaultScreenTitle;
+			drawMainText("");
+			drawMenu(true);
+		}
+		
 		if (currentPlugin != null) {
 			currentPlugin.onRedraw();
 		} else {
