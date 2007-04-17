@@ -399,15 +399,15 @@ public class G15Control {
 		loadingScreen = null;
 		
 		if (clearMainCount >= 0) { --clearMainCount; }
-		if (clearMainCount == 0) {
-			screenTitle = defaultScreenTitle;
-			drawMainText("");
-			drawMenu(true);
-		}
 		
 		if (currentPlugin != null) {
 			currentPlugin.onRedraw();
 		} else {
+			if (clearMainCount == 0) {
+				screenTitle = defaultScreenTitle;
+				drawMainText("");
+				drawMenu(true);
+			}		
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 	
 			myScreen.drawText(FontSize.SMALL, new Point(126, 2), G15Position.LEFT, dateFormat.format(new Date()));
