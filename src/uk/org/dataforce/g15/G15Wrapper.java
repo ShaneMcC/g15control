@@ -32,8 +32,8 @@ import java.io.IOException;
  * additional methods if they desire.
  */
 public abstract class G15Wrapper {
-	protected static final int LCD_WIDTH = 159; // 0-159
-	protected static final int LCD_HEIGHT = 42; // 0-42
+	protected static final int LCD_WIDTH = 159; // 0-159 (160)
+	protected static final int LCD_HEIGHT = 42; // 0-42 (43)
 	
 	/** Get the width of the LCD. */
 	public static final int getWidth() { return LCD_WIDTH; }
@@ -147,6 +147,14 @@ public abstract class G15Wrapper {
 	 * @param pixels String containing image as a string of 0's and 1's (0 = white, 1 = black)
 	 */
 	public abstract void drawPixels(Point point, int width, int height, String pixels);
+	
+	/**
+	 * Draws a pixel image of the given PixelImage
+	 *
+	 * @param point Location to draw image
+	 * @param PixelImage PixelImage to draw.
+	 */
+	public abstract void drawPixels(Point point, PixelImage image);
 	
 	/**
 	 * Set the colour of the pixel at a given point
