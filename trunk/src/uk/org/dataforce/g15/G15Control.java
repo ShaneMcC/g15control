@@ -54,6 +54,12 @@ public class G15Control {
 	
 	/** Main screen of Control application. */
 	private G15Wrapper myScreen;
+/** Extra screen used for test commands. */
+	private G15Wrapper testScreen = null;
+	/** Are test commands available? */
+	private final static boolean ENABLE_TEST = true;
+	/** Screen used for the LoadingComposer screen. */
+	private G15Wrapper loadingScreen;
 	
 	/** List of all plugin class names. */
 	private ArrayList<String> allScreens = new ArrayList<String>();
@@ -195,6 +201,7 @@ public class G15Control {
 	 * This starts the G15Composer process if needed.
 	 */
 	private void startComposer() {
+		showLoadingComposer();
 		final String composerApp = configFile.getValue(configFile.findElement("composer"));
 		if (composerApp == null) {
 			System.out.println("G15 Composer not found. Please make sure the <composer>/path/to/pipe</composer> element is in the config file.");
@@ -313,8 +320,12 @@ public class G15Control {
 									String execName;
 									configFile.setCurrentElement(commandElement);
 									tempElement = configFile.getFirstSubElement("command");
-									if (tempElement == null) { continue; }
-									execName = configFile.getValue(tempElement);
+									if (tempElement == null) {
+										if (buttonCommand != null && !configFile.hasChildren()) { execName = buttonCommand; }
+										else { return; }
+									} else {
+										execName = configFile.getValue(tempElement);
+									}
 									drawMediumMainText("Executing: "+execName);
 									clearMainCount = 6;
 									
@@ -330,6 +341,8 @@ public class G15Control {
 										drawMainText("Exec Command Failed");
 										flashLCD();
 									}
+								} else if (commandType.equals("test") && ENABLE_TEST) {
+									doTest();
 								} else {
 									System.out.println("Unknown command type: "+commandType);
 								}
@@ -346,16 +359,13 @@ public class G15Control {
 	/** Change the m button in use at this time. */
 	private void changeMButton(int newButton) {
 		final int oldButton = mButton;
+		if (newButton < 1 || newButton > 3) { newButton = 1; }
 		if (mButton == newButton) {
 			myScreen.setMXLight(mButton, false);
 			mButton = -1;
 			drawMediumMainText("'M' Buttons Disabled.");
 			clearMainCount = 6;
 		} else {
-			if (newButton < 1 || newButton > 3) {
-				newButton = 1;
-			}
-			
 			if (mButton == -1) {
 				drawMediumMainText("'M' Buttons Enabled ("+newButton+").");
 				clearMainCount = 6;
@@ -383,6 +393,10 @@ public class G15Control {
 			drawMe(true);
 			return;
 		}
+		if (loadingScreen instanceof G15WrapperLinuxNoComposer) {
+			((G15WrapperLinuxNoComposer)loadingScreen).close();
+		}
+		loadingScreen = null;
 		
 		if (clearMainCount >= 0) { --clearMainCount; }
 		if (clearMainCount == 0) {
@@ -741,6 +755,32 @@ public class G15Control {
 				}
 			}
 		}
+	}
+	
+	/** Test Stuff. */
+	private void doTest() {
+		if (ENABLE_TEST) {
+			if (testScreen == null) { testScreen = new G15WrapperLinuxNoComposer(); }
+			testScreen.drawPixels(testScreen.getTopLeftPoint(), PixelDrawings.getInfoConsoleBaseScreen());
+			testScreen.drawPixels(new Point(3, 11), PixelDrawings.getLoading());
+			testScreen.drawPixels(new Point(35, 11), PixelDrawings.getComposer());
+			testScreen.drawPixels(new Point(79, 11), PixelDrawings.getEllipsis());
+			testScreen.reversePixels(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint());
+			testScreen.silentDraw();
+		}
+	}
+	
+	/** Show a temp-screen to show that the composer is being loaded. */
+	private void showLoadingComposer() {
+		if (!(loadingScreen instanceof G15WrapperLinuxNoComposer)) {
+			loadingScreen = new G15WrapperLinuxNoComposer();
+		}
+		loadingScreen.drawPixels(loadingScreen.getTopLeftPoint(), PixelDrawings.getInfoConsoleBaseScreen());
+		loadingScreen.drawPixels(new Point(3, 11), PixelDrawings.getLoading());
+		loadingScreen.drawPixels(new Point(35, 11), PixelDrawings.getComposer());
+		loadingScreen.drawPixels(new Point(79, 11), PixelDrawings.getEllipsis());
+		loadingScreen.reversePixels(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint());
+		loadingScreen.silentDraw();
 	}
 	
 	/**

@@ -88,6 +88,16 @@ public class G15WrapperWindows extends G15Wrapper {
 	public void drawPixels(Point point, int width, int height, String pixels) { /* Not Implemented */ }
 	
 	/**
+	 * Draws a pixel image of the given PixelImage
+	 *
+	 * @param point Location to draw image
+	 * @param PixelImage PixelImage to draw.
+	 */
+	public void drawPixels(Point point, PixelImage image) {
+		drawPixels(point, image.width(), image.height(), image.toString());
+	}
+	
+	/**
 	 * Set the colour of the pixel at a given point
 	 *
 	 * @param point Point to set pixel at

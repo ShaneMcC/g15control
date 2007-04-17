@@ -189,6 +189,16 @@ public class G15WrapperLinux extends G15Wrapper {
 	public void drawPixels(Point point, int width, int height, String pixels) {
 		instructions.add("PO " + (int)point.getX() + ' ' + (int)point.getY() + ' ' + width + ' ' + height + " \"" + pixels + '"');
 	}
+	
+	/**
+	 * Draws a pixel image of the given PixelImage
+	 *
+	 * @param point Location to draw image
+	 * @param PixelImage PixelImage to draw.
+	 */
+	public void drawPixels(Point point, PixelImage image) {
+		drawPixels(point, image.width(), image.height(), image.toString());
+	}
 
 	/**
 	 * Set the colour of the pixel at a given point

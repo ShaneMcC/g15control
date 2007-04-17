@@ -43,8 +43,14 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	private BufferedReader in;
 
 	/** Screen Map [X][Y]. */
-	char[][] screenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
-	char[][] oldScreenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
+	private char[][] screenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
+	/** Previously drawn screenMap [X][Y]. */
+	private char[][] oldScreenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
+	
+	/** Character representing white. */
+	private static final char CHAR_WHITE = (char)0;
+	/** Character representing black. */
+	private static final char CHAR_BLACK = (char)1;
 
 	
 	/**
@@ -57,10 +63,23 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 			socket = new Socket("127.0.0.1", 15550);
 			out = new PrintWriter(socket.getOutputStream(), true);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		} catch (Exception e) {
-		}
+		} catch (Exception e) { }
 		out.print("GBUF");
 		clearScreen(false);
+	}
+	
+	/** Close socket on destroy. */
+	protected void finalize() throws Throwable {
+		close();
+		super.finalize();
+	}
+	
+	/** Close socket. */
+	public void close() {
+		try { socket.close(); }
+		catch (IOException e) { 
+			System.out.println("Could not close socket");
+		}
 	}
 
 	/**
@@ -71,9 +90,9 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 */
 	private char convertBoolean(boolean bool) {
 		if (bool == true) {
-			return (char)0;
+			return CHAR_BLACK;
 		} else {
-			return (char)1;
+			return CHAR_WHITE;
 		}
 	}
 
@@ -85,6 +104,18 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 			}
 		}
 	}
+	
+	/** Check if the screen has changed at all sinse the last drawing. */
+	private boolean screenHasChanged() {
+		for (int x = 0; x <= LCD_WIDTH ; ++x) {
+			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
+				if (screenMap[x][y] != oldScreenMap[x][y]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 	/**
 	 * Draw to the screen
@@ -93,10 +124,12 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 */
 	public void draw() throws IOException {
 		int i = 0;
-		for (int x = 0; x <= LCD_WIDTH ; ++x) {
+		if (screenHasChanged()) {
 			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
-				oldScreenMap[x][y] = screenMap[x][y];
-				out.printf("%c",screenMap[x][y]);
+				for (int x = 0; x <= LCD_WIDTH ; ++x) {
+					oldScreenMap[x][y] = screenMap[x][y];
+					out.printf("%c",screenMap[x][y]);
+				}
 			}
 		}
 	}
@@ -193,9 +226,33 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param pixels String containing image as a string of 0's and 1's (0 = white, 1 = black)
 	 */
 	public void drawPixels(Point point, int width, int height, String pixels) {
-
+		if (pixels.length() < (width*height)) {
+			System.out.println("[drawPixels] Not recieved enough pixels. Failing.");
+		} else if (pixels.length() > (width*height)) {
+			System.out.println("[drawPixels] Recieved more pixels than space to draw. This may look wrong!");
+		} 
+		char c = CHAR_WHITE;
+		char current = '0';
+		for (int y = 0; y < height ; ++y) {
+			for (int x = 0; x < width ; ++x) {
+				current = pixels.charAt((y*width)+x);
+				if (current == '1') { c = CHAR_BLACK; }
+				else { c = CHAR_WHITE; }
+				screenMap[x+(int)point.getX()][y+(int)point.getY()] = c;
+			}
+		}
 	}
-
+	
+	/**
+	 * Draws a pixel image of the given PixelImage
+	 *
+	 * @param point Location to draw image
+	 * @param PixelImage PixelImage to draw.
+	 */
+	public void drawPixels(Point point, PixelImage image) {
+		drawPixels(point, image.width(), image.height(), image.toString());
+	}
+	
 	/**
 	 * Set the colour of the pixel at a given point
 	 *
@@ -237,7 +294,15 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param point2 Point to finish at for area
 	 */
 	public void reversePixels(Point point1, Point point2) {
-	
+		for (int x = (int)point1.getX() ; x <= (int)point2.getX() ; ++x) {
+			for (int y = (int)point1.getY(); y <= (int)point2.getY() ; ++y) {
+				if (screenMap[x][y] == CHAR_WHITE) {
+					screenMap[x][y] = CHAR_BLACK;
+				} else {
+					screenMap[x][y] = CHAR_WHITE;
+				}
+			}
+		}
 	}
 
 	/**
