@@ -225,6 +225,10 @@ public class G15Control {
 			}
 			System.out.println("\tG15Composer created at: "+myComposerLocation);
 			myScreen = new G15WrapperLinux(myComposerLocation);
+			
+			for (int i = 0 ; i < allScreens.size(); ++i) {
+				pluginManager.getPlugin(allScreens.get(i)).changeScreen(myScreen);
+			}
 		}
 	}
 	
@@ -259,6 +263,8 @@ public class G15Control {
 			}
 		}
 		if (currentPlugin == null) {
+			myScreen.drawLine(new Point(124, 0), new Point(124, 8), true);
+			myScreen.drawLine(new Point(0, 8), new Point(myScreen.getWidth(), 8), true);
 			myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
 			drawMenu(true);
 		}
@@ -411,12 +417,9 @@ public class G15Control {
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 	
 			myScreen.drawText(FontSize.SMALL, new Point(126, 2), G15Position.LEFT, dateFormat.format(new Date()));
-			myScreen.drawLine(new Point(124, 0), new Point(124, 8), true);
 			
-			myScreen.fillArea(new Point(3,1), new Point(121, 8), false);
-			
+			myScreen.fillArea(new Point(3,1), new Point(121, 7), false);
 			myScreen.drawText(FontSize.SMALL, new Point(4, 2), G15Position.LEFT, screenTitle);
-			myScreen.drawLine(new Point(0, 8), new Point(myScreen.getWidth(), 8), true);
 			myScreen.silentDraw();
 		}
 	}
