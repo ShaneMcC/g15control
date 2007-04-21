@@ -73,6 +73,15 @@ public class Clock implements Plugin {
 	}
 	
 	/**
+	 * Called if the screen changes.
+	 *
+	 * @param wrapper The screen that this plugin now owns
+	 */
+	public void changeScreen(G15Wrapper wrapper) {
+		myScreen = wrapper;
+	}
+	
+	/**
 	 * Called when the plugin is about to be unloaded.
 	 */
 	public void onUnload() { }

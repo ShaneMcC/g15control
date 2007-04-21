@@ -37,6 +37,14 @@ public interface Plugin {
 	public void onLoad(G15Control control, G15Wrapper wrapper);
 	
 	/**
+	 * Called if the screen changes.
+	 *
+	 * @param wrapper The screen that this plugin now owns
+	 */
+	public void changeScreen(G15Wrapper wrapper);
+		
+	
+	/**
 	 * Called when the plugin is about to be unloaded.
 	 */
 	public void onUnload();
