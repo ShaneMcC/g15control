@@ -37,10 +37,20 @@ import uk.org.dataforce.g15.PixelImage;
 import uk.org.dataforce.g15.ProgressBarType;
 import uk.org.dataforce.g15.G15Wrapper;
 import uk.org.dataforce.g15.G15WrapperLinux;
+import uk.org.dataforce.g15.XMLParser;
 
 public class Amarok implements Plugin {
-	/** LCD Menu Buttons */
-	private String[] menuButtons = new String[]{"ShowOSD", "", "", "PB-", "T+"};
+	/** Default Menu Buttons */
+	private String[] defaultMenuButtons = new String[]{"ShowOSD", "", "", "PB-", "T+"};
+	
+	/** Blank LCD Menu Buttons */
+	private String[] blankMenuButtons = new String[]{"", "", "", "", ""};
+	
+	/** Current LCD Menu Buttons */
+	private String[] menuButtons = blankMenuButtons;
+	
+	/** Should the menu be blanked? */
+	private boolean blankMenu = false;
 
 	/** The drawing screen. */
 	private G15Wrapper myScreen;
@@ -56,6 +66,9 @@ public class Amarok implements Plugin {
 	
 	/** Display countdown time rather than countup in progressbar. */
 	private boolean showCountdownBar = false;
+	
+	/** Is PBar3 broken? */
+	private boolean brokenPBar3 = false;
 	
 	/**
 	 * Constants used to get information from amarok.
@@ -99,6 +112,10 @@ public class Amarok implements Plugin {
 	public void onLoad(G15Control control, G15Wrapper wrapper){
 		myController = control;
 		myScreen = wrapper;
+		XMLParser configFile = control.getConfig();
+		
+		configFile.reset();
+		brokenPBar3 = Boolean.parseBoolean(configFile.getValue(configFile.findElement("pbar3fix")));
 	}
 	
 	/**
@@ -124,7 +141,8 @@ public class Amarok implements Plugin {
 		String playStatus = PLAYSTATUS_UNKNOWN;
 		String randomStatus = RANDSTATUS_NORMAL;
 		try {
-			if (!dcop.checkCommand(PLAYER_CHECKCOMMAND)) {
+			blankMenu = !dcop.checkCommand(PLAYER_CHECKCOMMAND);
+			if (blankMenu) {
 				myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
 				myScreen.drawText(FontSize.LARGE, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, ERROR_NOTRUNNING);
 			} else {
@@ -144,7 +162,7 @@ public class Amarok implements Plugin {
 					myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
 					myScreen.drawText(FontSize.LARGE, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, ERROR_NOTPLAYING);
 				} else {
-/*					boolean isRepeatPlaylist = Boolean.parseBoolean(dcop.sendFunctionSingle(PLAYER_REPEATPLAYLISTSTATUS));
+					/*boolean isRepeatPlaylist = Boolean.parseBoolean(dcop.sendFunctionSingle(PLAYER_REPEATPLAYLISTSTATUS));
 					if (isRepeatPlaylist) {
 						myScreen.drawPixels(new Point(106, 2), getRepeatOn());
 					} else {
@@ -183,10 +201,15 @@ public class Amarok implements Plugin {
 					}
 					
 					if (myScreen instanceof G15WrapperLinux) {
+						ProgressBarType pbar = ProgressBarType.TYPE3;
+						if (brokenPBar3) {
+							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 30), new Point(150, 30), true, 0, totalTime, pbar);
+							pbar = ProgressBarType.TYPE1;
+						}
 						if (showCountdownBar) {
-							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 31), new Point(150, 31), true, (totalTime-currentTime), totalTime, ProgressBarType.TYPE3);
+							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 30), new Point(150, 30), true, (totalTime-currentTime), totalTime, pbar);
 						} else {
-							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 31), new Point(150, 31), true, currentTime, totalTime, ProgressBarType.TYPE3);
+							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 30), new Point(150, 30), true, currentTime, totalTime, pbar);
 						}
 					}
 					if (showCountdown) {
@@ -201,12 +224,33 @@ public class Amarok implements Plugin {
 			myScreen.fillArea(new Point(1,9), new Point(158, 33), false);
 			myScreen.drawText(FontSize.LARGE, new Point(0, (myScreen.getHeight()/2)-3), G15Position.CENTER, ERROR_GETTINGDATA);
 		}
-		if (!menuButtons[2].equals(playStatus) || !menuButtons[1].equals(randomStatus)) {
-			menuButtons[1] = randomStatus;
-			menuButtons[2] = playStatus;
-			drawMenu(false);
-		}
+		updateMenuButtons(randomStatus, playStatus);
 		myScreen.silentDraw();
+	}
+	
+	/**
+	 * Set the menu Buttons
+	 */
+	private void updateMenuButtons(final String randomStatus, final String playStatus) {
+		String[] newMenuButtons = new String[]{"", "", "", "", ""};
+		if (!blankMenu) {
+//			System.out.println("non-blank!");
+			for (int i = 0; i < newMenuButtons.length ; i++) {
+				newMenuButtons[i] = defaultMenuButtons[i];
+			}
+			if (showCountdownBar) { newMenuButtons[3] = "PB+"; }
+			if (!showCountdown) { newMenuButtons[4] = "T+"; }
+			newMenuButtons[1] = randomStatus;
+			newMenuButtons[2] = playStatus;
+		}
+		for (int i = 0; i < newMenuButtons.length ; i++) {
+			if (!newMenuButtons[i].equals(menuButtons[i])) {
+//				System.out.println("Drawing! ["+newMenuButtons[i]+"] != ["+menuButtons[i]+"]");
+				menuButtons = newMenuButtons;
+				drawMenu(false);
+				break;
+			}
+		}
 	}
 	
 	/**
@@ -270,6 +314,7 @@ public class Amarok implements Plugin {
 	 * Called when LCD Button 1 is pressed.
 	 */
 	public void onLCD1() {
+		if (menuButtons == blankMenuButtons) { return; }
 		dcop.sendProcedure("player showOSD");
 	}
 	
@@ -277,6 +322,7 @@ public class Amarok implements Plugin {
 	 * Called when LCD Button 2 is pressed.
 	 */
 	public void onLCD2() {
+		if (menuButtons == blankMenuButtons) { return; }
 		if (dcop.checkCommand("player")) {
 			boolean isRandom = Boolean.parseBoolean(dcop.sendFunctionSingle(PLAYER_RANDOMMODESTATUS));
 			if (isRandom) {
@@ -293,6 +339,7 @@ public class Amarok implements Plugin {
 	 * Called when LCD Button 3 is pressed.
 	 */
 	public void onLCD3() {
+		if (menuButtons == blankMenuButtons) { return; }
 		showCountdownBar = !showCountdownBar;
 		if (showCountdownBar) {
 			menuButtons[3] = "PB+";
@@ -306,6 +353,7 @@ public class Amarok implements Plugin {
 	 * Called when LCD Button 4 is pressed.
 	 */
 	public void onLCD4() {
+		if (menuButtons == blankMenuButtons) { return; }
 		showCountdown = !showCountdown;
 		if (showCountdown) {
 			menuButtons[4] = "T+";

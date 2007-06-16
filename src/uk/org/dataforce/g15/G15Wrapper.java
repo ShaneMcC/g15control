@@ -39,7 +39,7 @@ public abstract class G15Wrapper {
 	public static final int getWidth() { return LCD_WIDTH; }
 	
 	/** Get the Height of the LCD. */
-	public static final int getHeight() { return LCD_HEIGHT; }	
+	public static final int getHeight() { return LCD_HEIGHT; }
 	
 	/** Get the point for the top-left of the screen */
 	public static final Point getTopLeftPoint() { return new Point(0, 0); }	

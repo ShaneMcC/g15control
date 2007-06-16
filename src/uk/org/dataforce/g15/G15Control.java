@@ -725,6 +725,13 @@ public class G15Control {
 	}
 	
 	/** 
+	 * Get the reference to the config file.
+	 *
+	 * @return THe reference to the configFile.
+	 */
+	public XMLParser getConfig() { return configFile; }
+	
+	/** 
 	 * Load a plugin
 	 *
 	 * @param plugin Class name of plugin
@@ -738,7 +745,7 @@ public class G15Control {
 		} else {
 			return false;
 		}
-	 }
+	}
 
 	/** 
 	 * Load all plugins listed in the configFile.

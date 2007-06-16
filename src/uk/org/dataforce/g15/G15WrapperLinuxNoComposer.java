@@ -63,9 +63,11 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 			socket = new Socket("127.0.0.1", 15550);
 			out = new PrintWriter(socket.getOutputStream(), true);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		} catch (Exception e) { }
-		out.print("GBUF");
-		clearScreen(false);
+			out.print("GBUF");
+			clearScreen(false);
+		} catch (Exception e) {
+			throw new G15NotFoundException("Unable to open socket to G15Daemon");
+		}
 	}
 	
 	/** Close socket on destroy. */
