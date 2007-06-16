@@ -48,7 +48,9 @@ public class G15WrapperLinux extends G15Wrapper {
 	public G15WrapperLinux(String pipeLocation) {
 		try {
 			myOutput = new FileOutputStream(new File(pipeLocation));
-		} catch (FileNotFoundException e) {}
+		} catch (FileNotFoundException e) {
+			throw new G15NotFoundException("Unable to open socket to G15Composer");
+		}
 	}
 
 	/**
