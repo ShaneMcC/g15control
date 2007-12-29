@@ -1,0 +1,3 @@
+# Define our content namespace -- The folder MUST end with a /
+content dataforce-nowplaying chrome/content/
+overlay windowtype:Songbird:Main chrome://dataforce-nowplaying/content/nowPlaying.xul
