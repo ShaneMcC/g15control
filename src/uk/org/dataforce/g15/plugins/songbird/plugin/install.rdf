@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+<Description rdf:about="urn:mozilla:install-manifest">
+	<em:id>nowplayinginterface@home.dataforce.org.uk</em:id>
+	<em:name>Now Playing Interface</em:name>
+
+	<em:version>0.0.1</em:version>
+	<em:creator>Dataforce</em:creator>
+	<em:description>Allows other applications to query songbird to see what is playing.</em:description>
+	<em:homepageURL>http://home.dataforce.org.uk/</em:homepageURL>
+
+	<em:targetApplication>
+		<Description>
+			<em:id>songbird@songbirdnest.com</em:id>
+			<em:minVersion>0.4.0</em:minVersion>
+			<em:maxVersion>0.4.*</em:maxVersion>
+		</Description>
+	</em:targetApplication>
+</Description>
+
+</RDF>
