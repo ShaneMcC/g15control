@@ -193,8 +193,8 @@ public class Songbird implements Plugin {
 					int currentTime = 0;
 					int totalTime = 1;
 						try {
-						currentTime = (int)(Integer.parseInt(info.get(PLAYER_POSITION))/1000);
-						totalTime = (int)(Integer.parseInt(info.get(PLAYER_LENGTH))/1000);
+						currentTime = Integer.parseInt(info.get(PLAYER_POSITION))/1000;
+						totalTime = Integer.parseInt(info.get(PLAYER_LENGTH))/1000;
 						if (totalTime == 0) {
 							currentTime = 0;
 							totalTime = 1;
