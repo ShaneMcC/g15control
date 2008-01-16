@@ -151,8 +151,8 @@ public class G15Control {
 			System.exit(0);
 		} else {
 			String composerLocation = configFile.getValue(configFile.findElement("composer"));
-			if (composerLocation != null && new File(configFilename).exists()) {
-				if (composerLocation.equals("")) {
+			if (new File(configFilename).exists()) {
+				if (composerLocation == null) {
 					System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL AND UNFINISHED!!]");
 					myScreen = new G15WrapperLinuxNoComposer();
 				} else {
@@ -394,15 +394,17 @@ public class G15Control {
 	private void doRedraw() {
 		drawTime = false;
 		
-		if (ProcessHandler.getProcess(composerProcess) == null) {
-			startComposer();
-			drawMe(true);
-			return;
+		if (composerProcess != null) {
+			if (ProcessHandler.getProcess(composerProcess) == null) {
+				startComposer();
+				drawMe(true);
+				return;
+			}
+			if (loadingScreen instanceof G15WrapperLinuxNoComposer) {
+				((G15WrapperLinuxNoComposer)loadingScreen).close();
+			}
+			loadingScreen = null;
 		}
-		if (loadingScreen instanceof G15WrapperLinuxNoComposer) {
-			((G15WrapperLinuxNoComposer)loadingScreen).close();
-		}
-		loadingScreen = null;
 		
 		if (clearMainCount >= 0) { --clearMainCount; }
 		
@@ -410,10 +412,11 @@ public class G15Control {
 			currentPlugin.onRedraw();
 		} else {
 			if (clearMainCount == 0) {
+				if (defaultScreenTitle == null) { defaultScreenTitle = ""; }
 				screenTitle = defaultScreenTitle;
 				drawMainText("");
 				drawMenu(true);
-			}		
+			}
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 	
 			myScreen.drawText(FontSize.SMALL, new Point(126, 2), G15Position.LEFT, dateFormat.format(new Date()));
@@ -671,6 +674,7 @@ public class G15Control {
 			
 			myScreen.clearScreen(false);
 			myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
+			if (defaultScreenTitle == null) { defaultScreenTitle = ""; }
 			drawMainText(defaultScreenTitle);
 			myScreen.drawText(FontSize.SMALL, new Point(70, 36), G15Position.CENTER, "Ended at: "+dateFormat.format(new Date()));
 			myScreen.setMXLight(0, false);

@@ -30,6 +30,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
+import java.awt.BasicStroke;
+import java.awt.Color;
+
 /**
  * Linux commands for LCD Drawing.
  * This class relies on g15composer
@@ -42,16 +50,14 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	/** Used for reading from the daemon. */
 	private BufferedReader in;
 
-	/** Screen Map [X][Y]. */
-	private char[][] screenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
-	/** Previously drawn screenMap [X][Y]. */
-	private char[][] oldScreenMap = new char[LCD_WIDTH+1][LCD_HEIGHT+1];
-	
-	/** Character representing white. */
-	private static final char CHAR_WHITE = (char)0;
-	/** Character representing black. */
-	private static final char CHAR_BLACK = (char)1;
+	/** Image used to draw on. */
+	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+	/** Graphics for the image */
+	private Graphics2D graphicsArea = image.createGraphics();
 
+	/** Previously drawn image. */
+	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+	
 	
 	/**
 	 * Create a new Linux G15 LCD Wrapper.
@@ -88,35 +94,51 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * Convert a boolean into a char
 	 *
 	 * @param bool Boolean to convert
-	 * @return 0 for false, 1 for true.
+	 * @return white for false, black for true.
 	 */
-	private char convertBoolean(boolean bool) {
+	private Color convertBoolean(boolean bool) {
 		if (bool == true) {
-			return CHAR_BLACK;
+			return Color.black;
 		} else {
-			return CHAR_WHITE;
+			return Color.white;
 		}
 	}
 
-	/** Reset the screenMap. */
+	/** Reset the drawing Image to the last drawn image. */
 	public void clear() {
-		for (int x = 0; x <= LCD_WIDTH ; ++x) {
-			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
-				screenMap[x][y] = oldScreenMap[x][y];
-			}
+		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+		graphicsArea = image.createGraphics();
+		graphicsArea.drawImage(oldImage, 0, 0, null);
+	}
+
+	/**
+	 * Get the G15-Char for the given RGB value.
+	 *
+	 * @param rgb RGB Value (from getRGB)
+	 * @return 0 for white, else 1.
+	 */
+	public char getChar(final int rgb) {
+		if (rgb == Color.white.getRGB()) {
+			return (char)0;
+	//		return '0';
+		} else {
+			return (char)1;
+	//		return '1';
 		}
 	}
 	
-	/** Check if the screen has changed at all sinse the last drawing. */
-	private boolean screenHasChanged() {
-		for (int x = 0; x <= LCD_WIDTH ; ++x) {
-			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
-				if (screenMap[x][y] != oldScreenMap[x][y]) {
-					return true;
-				}
-			}
+	/**
+	 * Get the RGB value for the given char
+	 *
+	 * @param in Char Value (from getChar or so)
+	 * @return rgb for char. (white for 0, else black)
+	 */
+	public int getRGB(final char in) {
+		if (in == 0 || in == '0') {
+			return Color.white.getRGB();
+		} else {
+			return Color.black.getRGB();
 		}
-		return false;
 	}
 
 	/**
@@ -125,13 +147,12 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException {
-		int i = 0;
-		if (screenHasChanged()) {
-			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
-				for (int x = 0; x <= LCD_WIDTH ; ++x) {
-					oldScreenMap[x][y] = screenMap[x][y];
-					out.printf("%c",screenMap[x][y]);
-				}
+		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+		oldImage.createGraphics().drawImage(image, 0, 0, null);
+		
+		for (int y = 0; y < LCD_HEIGHT ; ++y) {
+			for (int x = 0; x < LCD_WIDTH ; ++x) {
+				out.printf("%c", getChar(oldImage.getRGB(x,y)));
 			}
 		}
 	}
@@ -148,7 +169,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 		} catch (IOException e) {
 			return false;
 		}
-	}	
+	}
 
 	/**
 	 * Draw a line of text in the default position.
@@ -157,7 +178,6 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param text String[] of lines to draw
 	 */
 	public void drawText(FontSize size, String[] text) {
-
 	}
 
 	/**
@@ -232,15 +252,10 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 			System.out.println("[drawPixels] Not recieved enough pixels. Failing.");
 		} else if (pixels.length() > (width*height)) {
 			System.out.println("[drawPixels] Recieved more pixels than space to draw. This may look wrong!");
-		} 
-		char c = CHAR_WHITE;
-		char current = '0';
+		}
 		for (int y = 0; y < height ; ++y) {
 			for (int x = 0; x < width ; ++x) {
-				current = pixels.charAt((y*width)+x);
-				if (current == '1') { c = CHAR_BLACK; }
-				else { c = CHAR_WHITE; }
-				screenMap[x+(int)point.getX()][y+(int)point.getY()] = c;
+				image.setRGB(x+point.x, y+point.y, getRGB(pixels.charAt((y*width)+x)));
 			}
 		}
 	}
@@ -262,7 +277,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void setPixelColour(Point point, boolean isBlack) {
-		screenMap[(int)point.getX()][(int)point.getY()] = convertBoolean(isBlack);
+		image.setRGB(point.x, point.y, convertBoolean(isBlack).getRGB());
 	}
 
 	/**
@@ -271,11 +286,8 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void clearScreen(boolean isBlack) {
-		for (int x = 0; x <= LCD_WIDTH ; ++x) {
-			for (int y = 0; y <= LCD_HEIGHT ; ++y) {
-				screenMap[x][y] = convertBoolean(isBlack);
-			}
-		}
+		graphicsArea.setColor(convertBoolean(isBlack));
+		graphicsArea.fillRect(0, 0, LCD_WIDTH, LCD_HEIGHT);
 	}
 
 	/**
@@ -286,7 +298,8 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void fillArea(Point point1, Point point2, boolean isBlack) {
-
+		graphicsArea.setColor(convertBoolean(isBlack));
+		graphicsArea.fillRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y);
 	}
 
 	/**
@@ -296,13 +309,9 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param point2 Point to finish at for area
 	 */
 	public void reversePixels(Point point1, Point point2) {
-		for (int x = (int)point1.getX() ; x <= (int)point2.getX() ; ++x) {
-			for (int y = (int)point1.getY(); y <= (int)point2.getY() ; ++y) {
-				if (screenMap[x][y] == CHAR_WHITE) {
-					screenMap[x][y] = CHAR_BLACK;
-				} else {
-					screenMap[x][y] = CHAR_WHITE;
-				}
+		for (int x = point1.x ; x <= point2.x ; ++x) {
+			for (int y = point1.y; y <= point2.y ; ++y) {
+				setPixelColour(new Point(x, y), (image.getRGB(x, y) == Color.white.getRGB()));
 			}
 		}
 	}
@@ -316,7 +325,13 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param thickness Thickness of line
 	 */
 	public void drawBox(Point point1, Point point2, boolean isBlack, int thickness) {
-
+		Stroke oldStroke = graphicsArea.getStroke();
+		graphicsArea.setStroke(new BasicStroke(thickness));
+	
+		graphicsArea.setColor(convertBoolean(isBlack));
+		graphicsArea.drawRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y);
+		
+		graphicsArea.setStroke(oldStroke);
 	}
 
 	/**
@@ -327,6 +342,8 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void drawLine(Point point1, Point point2, boolean isBlack) {
+		graphicsArea.setColor(convertBoolean(isBlack));
+		graphicsArea.drawLine(point1.x, point1.y, point2.x, point2.y);
 	}
 
 	/**
@@ -338,7 +355,12 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param filled Is the circle filled or not
 	 */
 	public void drawCircle(Point center, int radius, boolean isBlack, boolean filled) {
-
+		graphicsArea.setColor(convertBoolean(isBlack));
+		
+		graphicsArea.drawOval(center.x-radius, center.y-radius, radius*2, radius*2);
+		if (filled) {
+			graphicsArea.drawOval(center.x-radius, center.y-radius, radius*2, radius*2);
+		}
 	}
 
 	/**
@@ -350,7 +372,8 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param filled Is the box filled or not
 	 */
 	public void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled) {
-
+		graphicsArea.setColor(convertBoolean(isBlack));
+		graphicsArea.drawRoundRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y, 2, 2);
 	}
 
 	/**

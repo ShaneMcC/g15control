@@ -32,8 +32,8 @@ import java.io.IOException;
  * additional methods if they desire.
  */
 public abstract class G15Wrapper {
-	protected static final int LCD_WIDTH = 159; // 0-159 (160)
-	protected static final int LCD_HEIGHT = 42; // 0-42 (43)
+	protected static final int LCD_WIDTH = 160; // 0-159 (160)
+	protected static final int LCD_HEIGHT = 43; // 0-42 (43)
 	
 	/** Get the width of the LCD. */
 	public static final int getWidth() { return LCD_WIDTH; }
@@ -45,13 +45,13 @@ public abstract class G15Wrapper {
 	public static final Point getTopLeftPoint() { return new Point(0, 0); }	
 	
 	/** Get the point for the top-right of the screen */
-	public static final Point getTopRightPoint() { return new Point(LCD_WIDTH, 0); }	
+	public static final Point getTopRightPoint() { return new Point(LCD_WIDTH-1, 0); }	
 	
 	/** Get the point for the bottom-right of the screen */
-	public static final Point getBottomRightPoint() { return new Point(LCD_WIDTH, LCD_HEIGHT); }	
+	public static final Point getBottomRightPoint() { return new Point(LCD_WIDTH-1, LCD_HEIGHT-1); }	
 	
 	/** Get the point for the bottom-left of the screen */
-	public static final Point getBottomLeftPoint() { return new Point(0, LCD_HEIGHT); }
+	public static final Point getBottomLeftPoint() { return new Point(0, LCD_HEIGHT-1); }
 	
 	/**
 	 * Sleep for given numer of milliseconds

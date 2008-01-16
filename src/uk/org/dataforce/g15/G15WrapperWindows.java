@@ -22,6 +22,8 @@
  * SVN: $Id$
  */
 package uk.org.dataforce.g15;
+import java.io.IOException;
+import java.awt.Point;
 
 /**
  * Windows commands for LCD Drawing.
@@ -37,7 +39,21 @@ public class G15WrapperWindows extends G15Wrapper {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException { /* Not Implemented */ }
-		
+
+	/**
+	 * Draw to the screen without throwing an exception.
+	 *
+	 * @return true if draw was successful, else false
+	 */
+	public boolean silentDraw() {
+		try {
+			draw();
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
 	/**
 	 * Draw a line of text in the default position.
 	 *
@@ -47,6 +63,14 @@ public class G15WrapperWindows extends G15Wrapper {
 	public void drawText(FontSize size, String[] text) { /* Not Implemented */ }
 	
 	/**
+	 * Draw a line of text in the default position.
+	 *
+	 * @param size FontSize of text to draw.
+	 * @param text String of line to draw
+	 */
+	public void drawText(FontSize size, String text) { /* Not Implemented */ }
+	
+	/**
 	 * Draw a line of text to a specific position.
 	 *
 	 * @param size FontSize of text to draw.
@@ -54,7 +78,17 @@ public class G15WrapperWindows extends G15Wrapper {
 	 * @param position G15Position to draw text (left, right, center)
 	 * @param text String[] of lines to draw
 	 */
-	public void drawText(FontSize size, Point point, G15Position position, String[] text { /* Not Implemented */ }
+	public void drawText(FontSize size, Point point, G15Position position, String[] text) { /* Not Implemented */ }
+	
+	/**
+	 * Draw a line of text to a specific position.
+	 *
+	 * @param size FontSize of text to draw.
+	 * @param point Location to draw text
+	 * @param position G15Position to draw text (left, right, center)
+	 * @param text String of line to draw
+	 */
+	public void drawText(FontSize size, Point point, G15Position position, String text) { /* Not Implemented */ }
 		
 	/**
 	 * Loads a font into a font slot.
@@ -167,6 +201,34 @@ public class G15WrapperWindows extends G15Wrapper {
 	 * @param filled Is the box filled or not
 	 */
 	public void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled) { /* Not Implemented */ }
+	
+	/**
+	 * Set the MX Light on/off.
+	 *
+	 * @param light Which light to set (0 = all, 1,2,3 = M1 M2 M3)
+	 * @param setOn true to turn on, false to turn off.
+	 */
+	public boolean setMXLight(int light, boolean setOn) {
+		return false;
+	}
+	
+	/**
+	 * Set LCD Contrast Level.
+	 *
+	 * @param level Contrast level, (0 1 or 2)
+	 */
+	public boolean setContrastLevel(int level) {
+		return false;
+	}
+	
+	/**
+	 * Set LCD Brightness Level.
+	 *
+	 * @param level Brightness level, (0 1 or 2)
+	 */
+	public boolean setBrightnessLevel(int level) {
+		return false;
+	}
 	
 	/**
 	 * Set screen to foreground or background
