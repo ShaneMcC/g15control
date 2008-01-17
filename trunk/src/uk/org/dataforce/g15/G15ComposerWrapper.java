@@ -24,121 +24,52 @@
 package uk.org.dataforce.g15;
 
 import java.awt.Point;
-import java.net.Socket;
-import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-
-import java.awt.Dimension;
-import java.awt.image.BufferedImage;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
-import java.awt.BasicStroke;
-import java.awt.Color;
+import java.util.ArrayList;
 
 /**
- * Linux commands for LCD Drawing.
+ * G15Composer Wrapper for LCD Drawing.
  * This class relies on g15composer
  */
-public class G15WrapperLinuxNoComposer extends G15Wrapper {
-	/** This is the socket used for reading from/writing to the Daemon. */
-	private Socket socket;
-	/** Used for writing to the daemon. */
-	private PrintWriter out;
-	/** Used for reading from the daemon. */
-	private BufferedReader in;
+public class G15ComposerWrapper extends G15Wrapper {
+	/** Arraylist of stuff to draw. */
+	private ArrayList<String> instructions = new ArrayList<String>();
+	/** File output stream. */
+	private FileOutputStream myOutput;
 
-	/** Image used to draw on. */
-	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-	/** Graphics for the image */
-	private Graphics2D graphicsArea = image.createGraphics();
-
-	/** Previously drawn image. */
-	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-	
-	
 	/**
-	 * Create a new Linux G15 LCD Wrapper.
+	 * Create a new G15Composer Wrapper.
 	 *
 	 * @param pipeLocation Location of g15 socket file
 	 */
-	public G15WrapperLinuxNoComposer() {
+	public G15ComposerWrapper(String pipeLocation) {
 		try {
-			socket = new Socket("127.0.0.1", 15550);
-			out = new PrintWriter(socket.getOutputStream(), true);
-			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			out.print("GBUF");
-			clearScreen(false);
-		} catch (Exception e) {
-			throw new G15NotFoundException("Unable to open socket to G15Daemon");
-		}
-	}
-	
-	/** Close socket on destroy. */
-	protected void finalize() throws Throwable {
-		close();
-		super.finalize();
-	}
-	
-	/** Close socket. */
-	public void close() {
-		try { socket.close(); }
-		catch (IOException e) { 
-			System.out.println("Could not close socket");
+			myOutput = new FileOutputStream(new File(pipeLocation));
+		} catch (FileNotFoundException e) {
+			throw new G15NotFoundException("Unable to open socket to G15Composer");
 		}
 	}
 
 	/**
-	 * Convert a boolean into a char
+	 * Convert a boolean into an int
 	 *
 	 * @param bool Boolean to convert
-	 * @return white for false, black for true.
+	 * @return 0 for false, 1 for true.
 	 */
-	private Color convertBoolean(boolean bool) {
+	private int convertBoolean(boolean bool) {
 		if (bool == true) {
-			return Color.black;
+			return 1;
 		} else {
-			return Color.white;
+			return 0;
 		}
 	}
 
-	/** Reset the drawing Image to the last drawn image. */
+	/** Clear the drawing commands. */
 	public void clear() {
-		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-		graphicsArea = image.createGraphics();
-		graphicsArea.drawImage(oldImage, 0, 0, null);
-	}
-
-	/**
-	 * Get the G15-Char for the given RGB value.
-	 *
-	 * @param rgb RGB Value (from getRGB)
-	 * @return 0 for white, else 1.
-	 */
-	public char getChar(final int rgb) {
-		if (rgb == Color.white.getRGB()) {
-			return (char)0;
-	//		return '0';
-		} else {
-			return (char)1;
-	//		return '1';
-		}
-	}
-	
-	/**
-	 * Get the RGB value for the given char
-	 *
-	 * @param in Char Value (from getChar or so)
-	 * @return rgb for char. (white for 0, else black)
-	 */
-	public int getRGB(final char in) {
-		if (in == 0 || in == '0') {
-			return Color.white.getRGB();
-		} else {
-			return Color.black.getRGB();
-		}
+		instructions.clear();
 	}
 
 	/**
@@ -147,14 +78,11 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException {
-		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-		oldImage.createGraphics().drawImage(image, 0, 0, null);
-		
-		for (int y = 0; y < LCD_HEIGHT ; ++y) {
-			for (int x = 0; x < LCD_WIDTH ; ++x) {
-				out.printf("%c", getChar(oldImage.getRGB(x,y)));
-			}
+		for (String line: instructions) {
+			myOutput.write((line + "\n").getBytes());
 		}
+		myOutput.flush();
+		instructions.clear();
 	}
 	
 	/**
@@ -169,7 +97,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 		} catch (IOException e) {
 			return false;
 		}
-	}
+	}	
 
 	/**
 	 * Draw a line of text in the default position.
@@ -178,6 +106,11 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param text String[] of lines to draw
 	 */
 	public void drawText(FontSize size, String[] text) {
+		StringBuilder builder = new StringBuilder();
+		for (String line: text) {
+			builder.append(" \"" + line.replaceAll("\"", "\\\"") + "\"");
+		}
+		instructions.add('T' + size.getCharValue() + builder.toString());
 	}
 
 	/**
@@ -189,7 +122,11 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param text String[] of lines to draw
 	 */
 	public void drawText(FontSize size, Point point, G15Position position, String[] text) {
-	
+		StringBuilder builder = new StringBuilder();
+		for (String line: text) {
+			builder.append(" \"" + line.replaceAll("\"", "\\\"") + "\"");
+		}
+		instructions.add("TO " + (int)point.getX() + ' ' + (int)point.getY() + ' ' + size.getIntValue() + ' ' + position.getIntValue() + ' ' + builder.toString());
 	}
 	
 	/**
@@ -199,7 +136,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param text line to draw
 	 */
 	public void drawText(FontSize size, String text) {
-
+		instructions.add('T' + size.getCharValue() + '"' + text.replaceAll("\"", "\\\"") + '"');
 	}
 
 	/**
@@ -211,7 +148,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param text line to draw
 	 */
 	public void drawText(FontSize size, Point point, G15Position position, String text) {
-
+		instructions.add("TO " + (int)point.getX() + ' ' + (int)point.getY() + ' ' + size.getIntValue() + ' ' + position.getIntValue() + ' ' + '"' + text.replaceAll("\"", "\\\"") + '"');
 	}
 
 	/**
@@ -221,8 +158,8 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param size Size of font
 	 * @param pathToFont Path to font file
 	 */
-	public void loadFont(int fontSlot, FontSize size, String pathToFont) {
-
+	public void loadFont(int fontSlot, int size, String pathToFont) {
+		instructions.add("FL " + fontSlot + ' ' + size + " \"" + pathToFont + "\"");
 	}
 
 	/**
@@ -235,8 +172,26 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param position Position for text
 	 * @param text Text to output
 	 */
-	public void drawFont(int fontSlot, FontSize size, Point point, boolean isBlack, G15Position position, String[] text) {
+	public void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String text) {
+		instructions.add("FP " + fontSlot + ' ' + size + ' ' + (int)point.getX() + ' ' + (int)point.getY() + ' ' + convertBoolean(isBlack) + ' ' + position.getIntValue() + ' ' + '"' + text.replaceAll("\"", "\\\"") + '"');
+	}
 
+	/**
+	 * Draw text using specified font
+	 *
+	 * @param fontSlot Font slot for font
+	 * @param size size of font
+	 * @param point location to draw text at
+	 * @param isBlack True for bacl text, false for white
+	 * @param position Position for text
+	 * @param text Text to output
+	 */
+	public void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String[] text) {
+		StringBuilder builder = new StringBuilder();
+		for (String line: text) {
+			builder.append(" \"" + line.replaceAll("\"", "\\\"") + "\"");
+		}
+		instructions.add("FP " + fontSlot + ' ' + size + ' ' + (int)point.getX() + ' ' + (int)point.getY() + ' ' + convertBoolean(isBlack) + ' ' + position.getIntValue() + ' ' + builder.toString());
 	}
 
 	/**
@@ -248,16 +203,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param pixels String containing image as a string of 0's and 1's (0 = white, 1 = black)
 	 */
 	public void drawPixels(Point point, int width, int height, String pixels) {
-		if (pixels.length() < (width*height)) {
-			System.out.println("[drawPixels] Not recieved enough pixels. Failing.");
-		} else if (pixels.length() > (width*height)) {
-			System.out.println("[drawPixels] Recieved more pixels than space to draw. This may look wrong!");
-		}
-		for (int y = 0; y < height ; ++y) {
-			for (int x = 0; x < width ; ++x) {
-				image.setRGB(x+point.x, y+point.y, getRGB(pixels.charAt((y*width)+x)));
-			}
-		}
+		instructions.add("PO " + (int)point.getX() + ' ' + (int)point.getY() + ' ' + width + ' ' + height + " \"" + pixels + '"');
 	}
 	
 	/**
@@ -269,7 +215,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	public void drawPixels(Point point, PixelImage image) {
 		drawPixels(point, image.width(), image.height(), image.toString());
 	}
-	
+
 	/**
 	 * Set the colour of the pixel at a given point
 	 *
@@ -277,7 +223,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void setPixelColour(Point point, boolean isBlack) {
-		image.setRGB(point.x, point.y, convertBoolean(isBlack).getRGB());
+		instructions.add("PS " + (int)point.getX() + ' ' + (int)point.getY() + ' ' + convertBoolean(isBlack));
 	}
 
 	/**
@@ -286,8 +232,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void clearScreen(boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.fillRect(0, 0, LCD_WIDTH, LCD_HEIGHT);
+		instructions.add("PC " + convertBoolean(isBlack));
 	}
 
 	/**
@@ -298,8 +243,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void fillArea(Point point1, Point point2, boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.fillRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y);
+		instructions.add("PF " + (int)point1.getX() + ' ' + (int)point1.getY() + ' ' + (int)point2.getX() + ' ' + (int)point2.getY() + ' ' + convertBoolean(isBlack));
 	}
 
 	/**
@@ -309,11 +253,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param point2 Point to finish at for area
 	 */
 	public void reversePixels(Point point1, Point point2) {
-		for (int x = point1.x ; x <= point2.x ; ++x) {
-			for (int y = point1.y; y <= point2.y ; ++y) {
-				setPixelColour(new Point(x, y), (image.getRGB(x, y) == Color.white.getRGB()));
-			}
-		}
+		instructions.add("PR " + (int)point1.getX() + ' ' + (int)point1.getY() + ' ' + (int)point2.getX() + ' ' + (int)point2.getY());
 	}
 
 	/**
@@ -325,13 +265,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param thickness Thickness of line
 	 */
 	public void drawBox(Point point1, Point point2, boolean isBlack, int thickness) {
-		Stroke oldStroke = graphicsArea.getStroke();
-		graphicsArea.setStroke(new BasicStroke(thickness));
-	
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.drawRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y);
-		
-		graphicsArea.setStroke(oldStroke);
+		instructions.add("PB " + (int)point1.getX() + ' ' + (int)point1.getY() + ' ' + (int)point2.getX() + ' ' + (int)point2.getY() + ' ' + convertBoolean(isBlack) + ' ' + thickness + " 0");
 	}
 
 	/**
@@ -342,8 +276,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void drawLine(Point point1, Point point2, boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.drawLine(point1.x, point1.y, point2.x, point2.y);
+		instructions.add("DL " + (int)point1.getX() + ' ' + (int)point1.getY() + ' ' + (int)point2.getX() + ' ' + (int)point2.getY() + ' ' + convertBoolean(isBlack));
 	}
 
 	/**
@@ -355,12 +288,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param filled Is the circle filled or not
 	 */
 	public void drawCircle(Point center, int radius, boolean isBlack, boolean filled) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		
-		graphicsArea.drawOval(center.x-radius, center.y-radius, radius*2, radius*2);
-		if (filled) {
-			graphicsArea.drawOval(center.x-radius, center.y-radius, radius*2, radius*2);
-		}
+		instructions.add("DC " + (int)center.getX() + ' ' + (int)center.getY() + ' ' + radius + ' ' + convertBoolean(isBlack) + ' ' + convertBoolean(filled));
 	}
 
 	/**
@@ -372,8 +300,7 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param filled Is the box filled or not
 	 */
 	public void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.drawRoundRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y, 2, 2);
+		instructions.add("DR " + (int)point1.getX() + ' ' + (int)point1.getY() + ' ' + (int)point2.getX() + ' ' + (int)point2.getY() + ' ' + convertBoolean(isBlack) + ' ' + convertBoolean(filled));
 	}
 
 	/**
@@ -387,9 +314,19 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param barType Type of progress bar
 	 */
 	public void drawProgressBar(Point point1, Point point2, boolean isBlack, int position, int maxPosition, ProgressBarType barType) {
-
+		instructions.add("DB " + (int)point1.getX() + ' ' + (int)point1.getY() + ' ' + (int)point2.getX() + ' ' + (int)point2.getY() + ' ' + convertBoolean(isBlack) + ' ' + position + ' ' + maxPosition + ' ' + barType.getIntValue());
 	}
 
+	/**
+	 * Send an LCD mode. Not supported, see man g15composer.
+	 *
+	 * @param type Type of mode (C, X, R etc)
+	 * @param value Value to set mode to
+	 */
+	public void sendMode(char type, int value) {
+		instructions.add("M" + type + ' ' + value);
+	}
+	
 	/**
 	 * Set the MX Light on/off.
 	 *
@@ -397,7 +334,15 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param setOn true to turn on, false to turn off.
 	 */
 	public boolean setMXLight(int light, boolean setOn) {
-		return false;
+		final String line = "KM " + light + ' ' + convertBoolean(setOn);
+		
+		try {
+			myOutput.write((line + "\n").getBytes());
+			myOutput.flush();
+		} catch (IOException e) {
+			return false;
+		}
+		return true;
 	}
 	
 	/**
@@ -406,7 +351,15 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param level Contrast level, (0 1 or 2)
 	 */
 	public boolean setContrastLevel(int level) {
-		return false;
+		final String line = "LC " + level;
+		
+		try {
+			myOutput.write((line + "\n").getBytes());
+			myOutput.flush();
+		} catch (IOException e) {
+			return false;
+		}
+		return true;
 	}
 	
 	/**
@@ -415,7 +368,15 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param level Brightness level, (0 1 or 2)
 	 */
 	public boolean setBrightnessLevel(int level) {
-		return false;
+		final String line = "LB " + level;
+		
+		try {
+			myOutput.write((line + "\n").getBytes());
+			myOutput.flush();
+		} catch (IOException e) {
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -424,6 +385,6 @@ public class G15WrapperLinuxNoComposer extends G15Wrapper {
 	 * @param position Position of screen
 	 */
 	public void screenPosition(G15ScreenPosition position) {
-
+		instructions.add("MP " + position.getIntValue());
 	}
 }

@@ -36,7 +36,6 @@ import uk.org.dataforce.g15.FontSize;
 import uk.org.dataforce.g15.PixelImage;
 import uk.org.dataforce.g15.ProgressBarType;
 import uk.org.dataforce.g15.G15Wrapper;
-import uk.org.dataforce.g15.G15WrapperLinux;
 import uk.org.dataforce.g15.XMLParser;
 
 public class Amarok implements Plugin {
@@ -200,17 +199,15 @@ public class Amarok implements Plugin {
 							totalTime = 1;
 					}
 					
-					if (myScreen instanceof G15WrapperLinux) {
-						ProgressBarType pbar = ProgressBarType.TYPE3;
-						if (brokenPBar3) {
-							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 30), new Point(150, 30), true, 0, totalTime, pbar);
-							pbar = ProgressBarType.TYPE1;
-						}
-						if (showCountdownBar) {
-							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 30), new Point(150, 30), true, (totalTime-currentTime), totalTime, pbar);
-						} else {
-							((G15WrapperLinux)myScreen).drawProgressBar(new Point(10, 30), new Point(150, 30), true, currentTime, totalTime, pbar);
-						}
+					ProgressBarType pbar = ProgressBarType.TYPE3;
+					if (brokenPBar3) {
+						myScreen.drawProgressBar(new Point(10, 30), new Point(150, 30), true, 0, totalTime, pbar);
+						pbar = ProgressBarType.TYPE1;
+					}
+					if (showCountdownBar) {
+						myScreen.drawProgressBar(new Point(10, 30), new Point(150, 30), true, (totalTime-currentTime), totalTime, pbar);
+					} else {
+						myScreen.drawProgressBar(new Point(10, 30), new Point(150, 30), true, currentTime, totalTime, pbar);
 					}
 					if (showCountdown) {
 						time = duration(totalTime-currentTime)+time;

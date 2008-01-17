@@ -23,29 +23,46 @@
  */
 package uk.org.dataforce.g15;
 
+import java.awt.Dimension;
+import uk.org.dataforce.g15.fonts.G15Font;
+import uk.org.dataforce.g15.fonts.Font_4x6;
+import uk.org.dataforce.g15.fonts.Font_5x7;
+import uk.org.dataforce.g15.fonts.Font_8x8;
+
 public enum FontSize {
 	/** This is for small text. */
-	SMALL ('S', 0),
+	SMALL ('S', 0, new Font_4x6()),
 	/** This is for medium text. */
-	MEDIUM ('M', 1),
+	MEDIUM ('M', 1, new Font_5x7()),
 	/** This is for large text. */
-	LARGE ('L', 2);
+	LARGE ('L', 2, new Font_8x8());
 	
 	/** Character value of this enum. */
-	char myCharValue;
+	final char myCharValue;
 	/** Integer value of this enum. */
-	int myIntValue;
+	final int myIntValue;
+	/** G15Font of this font. */
+	final G15Font myFont;
 	
 	/**
 	 * Create a new FontSize.
 	 *
 	 * @param charValue Character value of this enum.
 	 * @param intValue Integer value of this enum.
+	 * @param G15Font font for this font.
 	 */
-	FontSize (char charValue, int intValue) {
+	FontSize (final char charValue, final int intValue, final G15Font font) {
 		myCharValue = charValue;
 		myIntValue = intValue;
+		myFont = font;
 	}
+	
+	/**
+	 * Get the Font of this enum.
+	 *
+	 * @return Font of this enum.
+	 */
+	public G15Font getFont() { return myFont; }
 	
 	/**
 	 * Get the integer value of this enum.

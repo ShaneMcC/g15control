@@ -124,7 +124,7 @@ public abstract class G15Wrapper {
 	 * @param size Size of font
 	 * @param pathToFont Path to font file
 	 */
-	public abstract void loadFont(int fontSlot, FontSize size, String pathToFont);
+	public abstract void loadFont(int fontSlot, int size, String pathToFont);
 	
 	/**
 	 * Draw text using specified font
@@ -136,7 +136,19 @@ public abstract class G15Wrapper {
 	 * @param position Position for text
 	 * @param text Text to output
 	 */
-	public abstract void drawFont(int fontSlot, FontSize size, Point point, boolean isBlack, G15Position position, String[] text);
+	public abstract void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String text);
+	
+	/**
+	 * Draw text using specified font
+	 *
+	 * @param fontSlot Font slot for font
+	 * @param size size of font
+	 * @param point location to draw text at
+	 * @param isBlack True for bacl text, false for white
+	 * @param position Position for text
+	 * @param text Text to output
+	 */
+	public abstract void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String[] text);
 	
 	/**
 	 * Draws a pixel image of the given Width and Height at the given point
@@ -226,6 +238,18 @@ public abstract class G15Wrapper {
 	 * @param filled Is the box filled or not
 	 */
 	public abstract void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled);
+	
+	/**
+	 * Draw a progress bar
+	 *
+	 * @param point1 Point to start at
+	 * @param point2 point to finish at
+	 * @param isBlack True to set to black, false to set to white
+	 * @param position Position of the bar
+	 * @param maxPosition Max Position of the bar
+	 * @param barType Type of progress bar
+	 */
+	public abstract void drawProgressBar(Point point1, Point point2, boolean isBlack, int position, int maxPosition, ProgressBarType barType);
 	
 	/**
 	 * Set screen to foreground or background

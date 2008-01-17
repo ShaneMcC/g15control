@@ -54,10 +54,6 @@ public class G15Control {
 	
 	/** Main screen of Control application. */
 	private G15Wrapper myScreen;
-/** Extra screen used for test commands. */
-	private G15Wrapper testScreen = null;
-	/** Are test commands available? */
-	private final static boolean ENABLE_TEST = true;
 	/** Screen used for the LoadingComposer screen. */
 	private G15Wrapper loadingScreen;
 	
@@ -131,9 +127,11 @@ public class G15Control {
 				out.println("	<!-- If this has attribute exec then this is taken to be the path to -->");
 				out.println("	<!-- the g15composer binary and not to an exisitng pipe. -->");
 				out.println("	<!-- If given a binary, a pipe will be created in /tmp -->");
-				out.println("	<!-- if the value of this is empty, then we do not use the composer and talk -->");
-				out.println("	<!-- to g15daemon directly. (Experimental and unfinished!!) -->");
-				out.println("	<composer exec=\"\">/usr/bin/g15composer</composer>");
+				out.println("	<!-- if the value of this is empty, or not present, then we do not use the composer and talk -->");
+				out.println("	<!-- to g15daemon directly. (Experimental) -->");
+				out.println("	<!-- Use /usr/bin/g15composer binary: <composer exec=\"\">/usr/bin/g15composer</composer> -->");
+				out.println("	<!-- Use /tmp/composer pipe: <composer>/tmp/composer</composer> -->");
+				out.println("	<!-- Use G15Daemon: <composer /> -->");
 //				out.println("	<!-- This is the text used when loading and as the default window title -->");
 //				out.println("	<welcometext>G15Control</welcometext>");
 				out.println("	<!-- This is the 'M' button to enable by default -->");
@@ -146,27 +144,33 @@ public class G15Control {
 			System.exit(0);
 		}
 		configFile = new XMLParser(configFilename);
-		if (System.getProperty("os.name").startsWith("Windows") || System.getProperty("os.name").startsWith("Mac")) {
+		G15DaemonWrapper.debug = (configFile.findElement("debug") != null);
+		try {
+			G15DaemonWrapper.debugScale = Integer.parseInt(configFile.getAttribute(configFile.findElement("debug"), "scale"));
+		} catch (NumberFormatException nfe) {
+			G15DaemonWrapper.debugScale = 4;
+		}
+		if (System.getProperty("os.name").startsWith("Windows") && !G15DaemonWrapper.debug) {
 			System.out.println("Sorry, this application does not yet run on this OS.");
 			System.exit(0);
 		} else {
-			String composerLocation = configFile.getValue(configFile.findElement("composer"));
-			if (new File(configFilename).exists()) {
-				if (composerLocation == null) {
-					System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL AND UNFINISHED!!]");
-					myScreen = new G15WrapperLinuxNoComposer();
-				} else {
-					System.out.println("Using "+composerLocation+" for g15composer.");
+				String composerLocation = configFile.getValue(configFile.findElement("composer"));
+			if (composerLocation == null) {
+				System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL]");
+				myScreen = new G15DaemonWrapper();
+			} else {
+				System.out.println("Using "+composerLocation+" for g15composer.");
+				if (new File(composerLocation).exists()) {
 					if (configFile.getAttribute(configFile.findElement("composer"), "exec") != null) {
 						// We need to spawn the g15composer ourself.
 						startComposer();
 					} else {
-						myScreen = new G15WrapperLinux(composerLocation);
+						myScreen = new G15ComposerWrapper(composerLocation);
 					}
+				} else {
+					System.out.println("G15 Composer not found. Please make sure the <composer>/path/to/pipe</composer> element is in the config file.");
+					System.exit(0);
 				}
-			} else {
-				System.out.println("G15 Composer not found. Please make sure the <composer>/path/to/pipe</composer> element is in the config file.");
-				System.exit(0);
 			}
 		}
 		
@@ -224,7 +228,7 @@ public class G15Control {
 				System.exit(0);
 			}
 			System.out.println("\tG15Composer created at: "+myComposerLocation);
-			myScreen = new G15WrapperLinux(myComposerLocation);
+			myScreen = new G15ComposerWrapper(myComposerLocation);
 			
 			for (int i = 0 ; i < allScreens.size(); ++i) {
 				pluginManager.getPlugin(allScreens.get(i)).changeScreen(myScreen);
@@ -251,7 +255,7 @@ public class G15Control {
 			
 			drawMainText(screenTitle);
 			drawSplashText("Loading.."); // Redrawn beacue drawMainText overlaps it with its fillarea.
-			myScreen.drawText(FontSize.SMALL, new Point(70, 28), G15Position.CENTER, new String[]{"Copyright (C) 2007", "Shane 'Dataforce' Mc Cormack"});
+			myScreen.drawText(FontSize.SMALL, new Point(70, 28), G15Position.CENTER, new String[]{"Copyright (C) 2007-2008", "Shane 'Dataforce' Mc Cormack"});
 			myScreen.silentDraw();
 			loadAllPlugins();
 			drawSplashText("Loading..");
@@ -347,8 +351,6 @@ public class G15Control {
 										drawMainText("Exec Command Failed");
 										flashLCD();
 									}
-								} else if (commandType.equals("test") && ENABLE_TEST) {
-									doTest();
 								} else {
 									System.out.println("Unknown command type: "+commandType);
 								}
@@ -400,8 +402,8 @@ public class G15Control {
 				drawMe(true);
 				return;
 			}
-			if (loadingScreen instanceof G15WrapperLinuxNoComposer) {
-				((G15WrapperLinuxNoComposer)loadingScreen).close();
+			if (loadingScreen instanceof G15DaemonWrapper) {
+				((G15DaemonWrapper)loadingScreen).close();
 			}
 			loadingScreen = null;
 		}
@@ -418,9 +420,7 @@ public class G15Control {
 				drawMenu(true);
 			}
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-	
 			myScreen.drawText(FontSize.SMALL, new Point(126, 2), G15Position.LEFT, dateFormat.format(new Date()));
-			
 			myScreen.fillArea(new Point(3,1), new Point(121, 7), false);
 			myScreen.drawText(FontSize.SMALL, new Point(4, 2), G15Position.LEFT, screenTitle);
 			myScreen.silentDraw();
@@ -771,23 +771,10 @@ public class G15Control {
 		}
 	}
 	
-	/** Test Stuff. */
-	private void doTest() {
-		if (ENABLE_TEST) {
-			if (testScreen == null) { testScreen = new G15WrapperLinuxNoComposer(); }
-			testScreen.drawPixels(testScreen.getTopLeftPoint(), PixelDrawings.getInfoConsoleBaseScreen());
-			testScreen.drawPixels(new Point(3, 11), PixelDrawings.getLoading());
-			testScreen.drawPixels(new Point(35, 11), PixelDrawings.getComposer());
-			testScreen.drawPixels(new Point(79, 11), PixelDrawings.getEllipsis());
-			testScreen.reversePixels(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint());
-			testScreen.silentDraw();
-		}
-	}
-	
 	/** Show a temp-screen to show that the composer is being loaded. */
 	private void showLoadingComposer() {
-		if (!(loadingScreen instanceof G15WrapperLinuxNoComposer)) {
-			loadingScreen = new G15WrapperLinuxNoComposer();
+		if (!(loadingScreen instanceof G15DaemonWrapper)) {
+			loadingScreen = new G15DaemonWrapper();
 		}
 		loadingScreen.drawPixels(loadingScreen.getTopLeftPoint(), PixelDrawings.getInfoConsoleBaseScreen());
 		loadingScreen.drawPixels(new Point(3, 11), PixelDrawings.getLoading());
@@ -803,7 +790,11 @@ public class G15Control {
 	 * @param args Array of strings representing each world given on the command line when starting the application.
 	 */
 	public static void main(String[] args) {
+		String filename = System.getProperty("user.home")+System.getProperty("file.separator");
+		if (!System.getProperty("os.name").startsWith("Windows")) { filename = filename+"."; }
+		filename = filename+"g15control.config";
+		
 		G15Control control = new G15Control();
-		control.main(System.getProperty("user.home")+System.getProperty("file.separator")+".g15control.config");
+		control.main(filename);
 	}
 }
