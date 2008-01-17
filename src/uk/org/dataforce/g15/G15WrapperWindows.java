@@ -97,7 +97,7 @@ public class G15WrapperWindows extends G15Wrapper {
 	 * @param size Size of font
 	 * @param pathToFont Path to font file
 	 */
-	public void loadFont(int fontSlot, FontSize size, String pathToFont) { /* Not Implemented */ }
+	public void loadFont(int fontSlot, int size, String pathToFont) { /* Not Implemented */ }
 	
 	/**
 	 * Draw text using specified font
@@ -109,7 +109,19 @@ public class G15WrapperWindows extends G15Wrapper {
 	 * @param position Position for text
 	 * @param text Text to output
 	 */
-	public void drawFont(int fontSlot, FontSize size, Point point, boolean isBlack, G15Position position, String[] text) { /* Not Implemented */ }
+	public void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String text) { /* Not Implemented */ }
+	
+	/**
+	 * Draw text using specified font
+	 *
+	 * @param fontSlot Font slot for font
+	 * @param size size of font
+	 * @param point location to draw text at
+	 * @param isBlack True for bacl text, false for white
+	 * @param position Position for text
+	 * @param text Text to output
+	 */
+	public void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String[] text) { /* Not Implemented */ }
 	
 	/**
 	 * Draws a pixel image of the given Width and Height at the given point
@@ -201,6 +213,18 @@ public class G15WrapperWindows extends G15Wrapper {
 	 * @param filled Is the box filled or not
 	 */
 	public void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled) { /* Not Implemented */ }
+	
+	/**
+	 * Draw a progress bar
+	 *
+	 * @param point1 Point to start at
+	 * @param point2 point to finish at
+	 * @param isBlack True to set to black, false to set to white
+	 * @param position Position of the bar
+	 * @param maxPosition Max Position of the bar
+	 * @param barType Type of progress bar
+	 */
+	public void drawProgressBar(Point point1, Point point2, boolean isBlack, int position, int maxPosition, ProgressBarType barType) { /* Not Implemented */ }
 	
 	/**
 	 * Set the MX Light on/off.

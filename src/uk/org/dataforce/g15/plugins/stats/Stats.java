@@ -38,7 +38,6 @@ import uk.org.dataforce.g15.G15Control;
 import uk.org.dataforce.g15.G15Position;
 import uk.org.dataforce.g15.FontSize;
 import uk.org.dataforce.g15.G15Wrapper;
-import uk.org.dataforce.g15.G15WrapperLinux;
 
 public class Stats implements Plugin {
 	/** The drawing screen. */

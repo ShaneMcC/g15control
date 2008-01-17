@@ -25,7 +25,6 @@ package uk.org.dataforce.g15.plugins;
 
 import uk.org.dataforce.g15.G15Control;
 import uk.org.dataforce.g15.G15Wrapper;
-import uk.org.dataforce.g15.G15WrapperLinux;
 
 public interface Plugin {
 	/**
