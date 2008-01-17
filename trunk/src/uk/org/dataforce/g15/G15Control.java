@@ -159,6 +159,9 @@ public class G15Control {
 				System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL]");
 				myScreen = new G15DaemonWrapper();
 			} else {
+				// Make sure we don't have a debugging G15DaemonWrapper if we are wrapping
+				// G15Composer instead.
+				G15DaemonWrapper.debug = false;
 				System.out.println("Using "+composerLocation+" for g15composer.");
 				if (new File(composerLocation).exists()) {
 					if (configFile.getAttribute(configFile.findElement("composer"), "exec") != null) {
@@ -175,7 +178,7 @@ public class G15Control {
 		}
 		
 		try {
-			myControl = new RemoteControl(this);
+			myControl = RemoteControl.getRemoteControl(this, (configFile.findElement("wip") != null));
 			controlThread = new Thread(myControl);
 			controlThread.start();
 		} catch (IOException e) {

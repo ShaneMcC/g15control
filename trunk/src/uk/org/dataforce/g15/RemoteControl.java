@@ -42,17 +42,51 @@ public class RemoteControl implements Runnable {
 	/** Queue for commands. */
 	private LinkedList<String> commandQueue = new LinkedList<String>();
 	
+	/** Singleton Remote Control Instance */
+	private static RemoteControl me = null;
+	
 	/** My Owner. */
 	G15Control myOwner;
-
+	
+	/** Is this a socket-less RemoteControl? */
+	private boolean noSocket = false;
+	
+	
+	/**
+	 * Get the Remote Control (Create if needed)
+	 *
+	 * @param owner The G15Control that owns this remote control
+	 * @param noSocket does this RemoteControl need a socket?
+	 */
+	public static RemoteControl getRemoteControl(G15Control owner, final boolean noSocket) throws IOException {
+		if (me == null) {
+			me = new RemoteControl(owner, noSocket);
+		}
+		return me;
+	}
+	
+	/**
+	 * Get the Remote Control (Throw exception if not created)
+	 */
+	public static RemoteControl getRemoteControl() throws IOException {
+		if (me == null) {
+			throw new IOException("No RemoteControl found.");
+		}
+		return me;
+	}
+	
 	/**
 	 * Create a remote control.
 	 *
 	 * @param owner The G15Control that owns this remote control
+	 * @param noSocket does this RemoteControl need a socket?
 	 */
-	RemoteControl(G15Control owner) throws IOException {
+	private RemoteControl(G15Control owner, final boolean noSocket) throws IOException {
 		myOwner = owner;
-		serverSocket = new ServerSocket(33523);
+		this.noSocket = noSocket;
+		if (!noSocket) {
+			serverSocket = new ServerSocket(33523);
+		}
 	}
 	
 	/**
@@ -62,10 +96,23 @@ public class RemoteControl implements Runnable {
 		synchronized (commandQueue) {
 			return commandQueue.poll();
 		}
-	}	
+	}
+	
+	/**
+	 * Add a command to the commandQueue.
+	 *
+	 * @param cmd Command to add.
+	 */
+	public void addCommand(final String cmd)  {
+		synchronized (commandQueue) {
+			commandQueue.add(cmd);
+			myOwner.gotCommand();
+		}
+	}
 	
 	/** Run the remote control. */
 	public void run() {
+		if (noSocket) { return; }
 		PrintWriter out;
 		BufferedReader in;
 		String inputLine;
@@ -76,14 +123,11 @@ public class RemoteControl implements Runnable {
 				out = new PrintWriter(clientSocket.getOutputStream(), true);
 				in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 				inputLine = in.readLine();
-				synchronized (commandQueue) {
-					commandQueue.add(inputLine);
-				}
 				out.println("OK");
 				out.close();
 				in.close();
 				clientSocket.close();
-				myOwner.gotCommand();
+				addCommand(inputLine);
 			} catch (IOException e) { continue; }
 		}
 	}
