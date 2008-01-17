@@ -27,10 +27,9 @@ import uk.org.dataforce.g15.fonts.G15Font;
 
 import java.awt.Point;
 import java.net.Socket;
-import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
 import java.awt.geom.Rectangle2D;
@@ -47,18 +46,45 @@ import java.awt.Color;
 import java.awt.Font;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 
 /**
  * G15Daemon Wrapper for LCD Drawing.
  * This class relies on g15daemon
  */
 public class G15DaemonWrapper extends G15Wrapper implements Runnable {
+
+	/** Map Input from G15Daemon Socket. */
+	private class G15Key {
+		/** The Command for this key. */
+		private String myCommand;
+		/** The value of this key. */
+		private int myValue;
+		
+		/** Create a new G15Key */
+		public G15Key(final String command, final int value) {
+			myCommand = command;
+			myValue = value;
+		}
+	
+		/** Get the Command for this key. */
+		public String getCommand() { return myCommand; }
+		/** Get the value of this key. */
+		public int getValue() { return myValue; }
+	}
+	
+	/** This List stores all the known keys */
+	private ArrayList<G15Key> keycodes = new ArrayList<G15Key>();
+	
+	/** This int stores the last keypress data */
+	private int lastKeyPress = 0;
+	
 	/** This is the socket used for reading from/writing to the Daemon. */
 	private Socket socket;
 	/** Used for writing to the daemon. */
 	private PrintWriter out;
 	/** Used for reading from the daemon. */
-	private BufferedReader in;
+	private DataInputStream in;
 	/** Used for reading from the daemon. */
 	private volatile Thread myThread = null;
 
@@ -97,31 +123,41 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	public G15DaemonWrapper() {
 		myScale = debugScale;
 		if (debug) {
-			javax.swing.JFrame f = new javax.swing.JFrame();
+			javax.swing.JDialog d = new javax.swing.JDialog();
 			javax.swing.JPanel p = new javax.swing.JPanel();
-			f.setTitle("G15 LCD (Scaled "+myScale+" times)");
+			d.setTitle("G15 LCD (Scaled "+myScale+" times)");
 			Dimension panelSize = new Dimension(LCD_WIDTH*myScale, LCD_HEIGHT*myScale);
 			p.setSize(panelSize);
 			p.setMinimumSize(panelSize);
 			
-			f.add(p);
-			f.pack();
-			java.awt.Insets insets = f.getInsets();
-			Dimension frameSize = new Dimension(panelSize.width+insets.left+insets.right, panelSize.height+insets.top+insets.bottom);
-			f.setSize(frameSize);
-			f.setMinimumSize(frameSize);
-			f.addWindowListener(new java.awt.event.WindowAdapter() {
+			d.add(p);
+			d.pack();
+			java.awt.Insets insets = d.getInsets();
+			Dimension dialogSize = new Dimension(panelSize.width+insets.left+insets.right, panelSize.height+insets.top+insets.bottom);
+			d.setSize(dialogSize);
+			d.setMinimumSize(dialogSize);
+			d.addWindowListener(new java.awt.event.WindowAdapter() {
 				public void windowClosing(final java.awt.event.WindowEvent event) {
 					System.exit(0);
 				}
 			});
-			f.setVisible(true);
+			d.setResizable(false);
+			d.setVisible(true);
 			debugDrawingArea = (Graphics2D)p.getGraphics();
 		} else {
 			try {
 				socket = new Socket("127.0.0.1", 15550);
+				socket.setOOBInline(true);
 				out = new PrintWriter(socket.getOutputStream(), true);
-				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				in = new DataInputStream(socket.getInputStream());
+				
+				byte[] inByte = new byte[16];
+				if (in.read(inByte) != inByte.length) {
+					System.out.println("Not a G15Daemon? Ignoring KeyPresses");
+				} else {
+					setKeyCodes();
+				}
+				
 				myThread = new Thread(this);
 				myThread.start();
 				out.print("GBUF");
@@ -153,15 +189,19 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	
 	/** Read input from G15Daemon */
 	public void run() {
-		String line;
+		int inData = 0;
 		Thread thisThread = Thread.currentThread();
 		while (myThread == thisThread) {
 			try {
-				line = in.readLine();
-				if (line != null) {
-					System.out.println("Input Line: "+line);
-				} else {
-					break;
+				byte[] inByte = new byte[4];
+				if (in.read(inByte) == 4) {
+					inData = (((inByte[0] & 0xFF) << 24) | ((inByte[1] & 0xFF) << 16) | ((inByte[2] & 0xFF) << 8) | (inByte[3]& 0xFF));
+					for (G15Key key : keycodes) {
+						if ((key.getValue() & inData) != 0 && (key.getValue() & lastKeyPress) == 0) {
+							RemoteControl.getRemoteControl().addCommand(key.getCommand());
+						}
+					}
+					lastKeyPress = inData;
 				}
 			} catch (IOException ioe) {
 				break;
@@ -169,7 +209,38 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		}
 		myThread = null;
 	}
-
+	
+	private void setKeyCodes() {
+		keycodes.add(new G15Key("BUTTON G1", 16777216));
+		keycodes.add(new G15Key("BUTTON G2", 33554432));
+		keycodes.add(new G15Key("BUTTON G3", 67108864));
+		keycodes.add(new G15Key("BUTTON G4", 134217728));
+		keycodes.add(new G15Key("BUTTON G5", 268435456));
+		keycodes.add(new G15Key("BUTTON G6", 536870912));
+		keycodes.add(new G15Key("BUTTON G7", 1073741824));
+		keycodes.add(new G15Key("BUTTON G8", -2147483648));
+		keycodes.add(new G15Key("BUTTON G9", 65536));
+		keycodes.add(new G15Key("BUTTON G10", 131072));
+		keycodes.add(new G15Key("BUTTON G11", 262144));
+		keycodes.add(new G15Key("BUTTON G12", 524288));
+		keycodes.add(new G15Key("BUTTON G13", 1048576));
+		keycodes.add(new G15Key("BUTTON G14", 2097152));
+		keycodes.add(new G15Key("BUTTON G15", 4194304));
+		keycodes.add(new G15Key("BUTTON G16", 8388608));
+		keycodes.add(new G15Key("BUTTON G17", 256));
+		keycodes.add(new G15Key("BUTTON G18", 512));
+		
+		keycodes.add(new G15Key("BUTTON M1", 1024));
+		keycodes.add(new G15Key("BUTTON M2", 2048));
+		keycodes.add(new G15Key("BUTTON M3", 4096));
+		
+		keycodes.add(new G15Key("BUTTON CHG", 16384));
+		keycodes.add(new G15Key("BUTTON LCD1", 32768));
+		keycodes.add(new G15Key("BUTTON LCD2", 1));
+		keycodes.add(new G15Key("BUTTON LCD3", 2));
+		keycodes.add(new G15Key("BUTTON LCD4", 4));
+	}
+	
 	/**
 	 * Convert a boolean into a char
 	 *
