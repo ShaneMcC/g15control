@@ -176,13 +176,13 @@ public class G15Control {
 				System.out.println("| it is reccomended that you stop using this now and make |");
 				System.out.println("| sure any plugins work with the new rendering method.    |");
 				System.out.println("===========================================================");
-				if (configFile.getAttribute(configFile.findElement("ignoreDeprecation"), "exec") != null) {
+				if (configFile.getAttribute(configFile.findElement("composer"), "ignoreDeprecation") == null) {
 					System.out.println("| To enable the use of the deprecated G15Composer Wrapper |");
 					System.out.println("| you need to add ignoreDeprecation=\"true\" to your config |");
 					System.out.println("| fine and restart G15Control.                            |");
 					System.out.println("===========================================================");
 					showLoadingComposer(true);
-					try { Thread.sleep(5); } catch (InterruptedException e) { }
+					try { Thread.sleep(60000); } catch (InterruptedException e) { }
 					System.exit(1);
 				}
 				if (new File(composerLocation).exists()) {
@@ -819,10 +819,13 @@ public class G15Control {
 		// Text
 		loadingScreen.drawText(FontSize.SMALL, textPoint, G15Position.LEFT, "[G15Control]");
 		if (showWarning) {
-			loadingScreen.drawText(FontSize.SMALL, new Point(3, 11), G15Position.LEFT, new String[]{"Not Loading G15Composer!", "Please check the console."});
+			loadingScreen.drawText(FontSize.MEDIUM, new Point(3, 13), G15Position.CENTER, new String[]{"Not Loading G15Composer!"});
+			loadingScreen.drawText(FontSize.MEDIUM, new Point(3, 25), G15Position.CENTER, new String[]{"Please check the console for", "more information."});
 		} else {
-			loadingScreen.drawText(FontSize.SMALL, new Point(3, 11), G15Position.LEFT, new String[]{"Loading G15Composer...", "(Note: Use of G15Composer is deprecated.)"});
+			final String[] text = new String[]{"Loading G15Composer...", "(Note: Use of G15Composer is deprecated.)"};
+			loadingScreen.drawText(FontSize.MEDIUM, new Point(3, 11), G15Position.LEFT, text);
 		}
+		
 		
 		// Give it that console-y feel by making it white-on-black!
 		loadingScreen.reversePixels(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint());
