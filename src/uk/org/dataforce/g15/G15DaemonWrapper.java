@@ -99,6 +99,9 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	/** FontSlot hashmap */
 	private HashMap<String, Font> fontSlots = new HashMap<String, Font>();
 	
+	/** Status of LEDs */
+	private boolean[] ledState = new boolean[3];
+	
 	/**
 	 * Are we emulating G15Composer?
 	 * Enabling this mode makes us copy some of G15Composers quirks, such as
@@ -107,6 +110,9 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 *   we ignore the size in loadFont)
 	 */
 	private boolean emulateComposer = true;
+	
+	/** Are we connecting to a WIP version of G15Daemon? */
+	public static boolean isWIP = false;
 	
 	/** Should new instances start in Debugging Mode? */
 	public static boolean debug = false;
@@ -155,7 +161,17 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 				if (in.read(inByte) != inByte.length) {
 					System.out.println("Not a G15Daemon? Ignoring KeyPresses");
 				} else {
+					// Configure outselves for the key codes
 					setKeyCodes();
+					if (!isWIP) {
+						// Tell older G15Daemons we want to know about key presses.
+						try {
+							socket.sendUrgentData(0x10);
+						} catch (IOException ioe) { }
+					}
+					// And now set all the LEDs off so that the actual state matches our
+					// state.
+					setMXLight(0, false);
 				}
 				
 				myThread = new Thread(this);
@@ -654,7 +670,23 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param setOn true to turn on, false to turn off.
 	 */
 	public boolean setMXLight(int light, boolean setOn) {
-		return false;
+		int data = 0x20;
+
+		for (int i = 0; i < ledState.length; i++) {
+			if (light == 0) {
+				ledState[i] = setOn;
+			} else if (light == (i+1)) {
+				ledState[i] = setOn;
+			}
+			if (ledState[i]) {
+				data = data | 1<<i;
+			}
+		}
+		
+		try {
+			socket.sendUrgentData(data);
+			return true;
+		} catch (IOException ioe) { return false; }
 	}
 	
 	/**
@@ -663,7 +695,10 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param level Contrast level, (0 1 or 2)
 	 */
 	public boolean setContrastLevel(int level) {
-		return false;
+		try {
+			socket.sendUrgentData(0x40 | level);
+			return true;
+		} catch (IOException ioe) { return false; }
 	}
 	
 	/**
@@ -672,7 +707,10 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param level Brightness level, (0 1 or 2)
 	 */
 	public boolean setBrightnessLevel(int level) {
-		return false;
+		try {
+			socket.sendUrgentData(0x80 | level);
+			return true;
+		} catch (IOException ioe) { return false; }
 	}
 
 	/**

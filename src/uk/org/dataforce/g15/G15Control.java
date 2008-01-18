@@ -112,6 +112,9 @@ public class G15Control {
 	
 	/** Have we finished loading? */
 	private boolean hasLoaded;
+	
+	/** Are we running with a WIP version of G15Daemon? */
+	private boolean isWIP = false;
 
 	/**
 	 * Main application.
@@ -145,16 +148,18 @@ public class G15Control {
 		}
 		configFile = new XMLParser(configFilename);
 		G15DaemonWrapper.debug = (configFile.findElement("debug") != null);
+		G15DaemonWrapper.isWIP = (configFile.findElement("wip") != null);
 		try {
 			G15DaemonWrapper.debugScale = Integer.parseInt(configFile.getAttribute(configFile.findElement("debug"), "scale"));
 		} catch (NumberFormatException nfe) {
 			G15DaemonWrapper.debugScale = 4;
 		}
+		boolean needRemoteSocket = false;
 		if (System.getProperty("os.name").startsWith("Windows") && !G15DaemonWrapper.debug) {
 			System.out.println("Sorry, this application does not yet run on this OS.");
 			System.exit(0);
 		} else {
-				String composerLocation = configFile.getValue(configFile.findElement("composer"));
+			String composerLocation = configFile.getValue(configFile.findElement("composer"));
 			if (composerLocation == null) {
 				System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL]");
 				myScreen = new G15DaemonWrapper();
@@ -162,6 +167,7 @@ public class G15Control {
 				// Make sure we don't have a debugging G15DaemonWrapper if we are wrapping
 				// G15Composer instead.
 				G15DaemonWrapper.debug = false;
+				needRemoteSocket = true;
 				System.out.println("Using "+composerLocation+" for g15composer.");
 				if (new File(composerLocation).exists()) {
 					if (configFile.getAttribute(configFile.findElement("composer"), "exec") != null) {
@@ -178,7 +184,7 @@ public class G15Control {
 		}
 		
 		try {
-			myControl = RemoteControl.getRemoteControl(this, (configFile.findElement("wip") != null));
+			myControl = RemoteControl.getRemoteControl(this, needRemoteSocket);
 			controlThread = new Thread(myControl);
 			controlThread.start();
 		} catch (IOException e) {
@@ -734,7 +740,7 @@ public class G15Control {
 	/** 
 	 * Get the reference to the config file.
 	 *
-	 * @return THe reference to the configFile.
+	 * @return The reference to the configFile.
 	 */
 	public XMLParser getConfig() { return configFile; }
 	
