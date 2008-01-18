@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2007 Shane Mc Cormack
+ * Copyright (c) 2006-2008 Shane Mc Cormack
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -134,7 +134,7 @@ public class G15Control {
 				out.println("	<!-- to g15daemon directly. (Experimental) -->");
 				out.println("	<!-- Use /usr/bin/g15composer binary: <composer exec=\"\">/usr/bin/g15composer</composer> -->");
 				out.println("	<!-- Use /tmp/composer pipe: <composer>/tmp/composer</composer> -->");
-				out.println("	<!-- Use G15Daemon: <composer /> -->");
+				out.println("	<!-- Use G15Daemon: <composer/> -->");
 //				out.println("	<!-- This is the text used when loading and as the default window title -->");
 //				out.println("	<welcometext>G15Control</welcometext>");
 				out.println("	<!-- This is the 'M' button to enable by default -->");
