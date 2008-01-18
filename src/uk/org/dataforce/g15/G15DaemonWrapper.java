@@ -89,12 +89,12 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	private volatile Thread myThread = null;
 
 	/** Image used to draw on. */
-	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
 	/** Graphics for the image */
 	private Graphics2D graphicsArea = image.createGraphics();
 
 	/** Previously drawn image. */
-	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
 	
 	/** FontSlot hashmap */
 	private HashMap<String, Font> fontSlots = new HashMap<String, Font>();
@@ -273,7 +273,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 
 	/** Reset the drawing Image to the last drawn image. */
 	public void clear() {
-		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		graphicsArea = image.createGraphics();
 		graphicsArea.drawImage(oldImage, 0, 0, null);
 	}
@@ -312,7 +312,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException {
-		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
+		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		oldImage.createGraphics().drawImage(image, 0, 0, null);
 		
 		if (debugDrawingArea == null) {
@@ -571,8 +571,11 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void fillArea(Point point1, Point point2, boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.fillRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y+1);
+//		graphicsArea.setColor(convertBoolean(isBlack));
+		graphicsArea.setColor(Color.red);
+		final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
+		final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
+		graphicsArea.fillRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));
 	}
 
 	/**
@@ -602,7 +605,9 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		graphicsArea.setStroke(new BasicStroke(thickness));
 	
 		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.drawRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y+1);
+		final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
+		final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
+		graphicsArea.drawRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));
 		
 		graphicsArea.setStroke(oldStroke);
 	}
@@ -660,7 +665,22 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param barType Type of progress bar
 	 */
 	public void drawProgressBar(Point point1, Point point2, boolean isBlack, int position, int maxPosition, ProgressBarType barType) {
-
+		final Color background = (isBlack) ? Color.white : Color.black;
+		final Color foreground = (isBlack) ? Color.black : Color.white;
+		
+		final double percent = (100.0/maxPosition)*position;
+		// The 0.01d here solves some rounding problems.
+		final int length = (int)Math.round(0.01d + ((point2.x-(point1.x+1))/100.0)*percent);
+		
+//		if (barType == ProgressBarType.TYPE1) {
+			if (emulateComposer && ((point2.x - point1.x) < 0 || (point2.y - point1.y) < 0)) {
+				// For negative X/Y direction, g15composer doesn't fill the bar...
+				drawBox(new Point(point1.x, point1.y), new Point(point1.x+1+length, point2.y-1), isBlack, 1);
+			} else {
+				fillArea(new Point(point1.x, point1.y), new Point(point1.x+1+length, point2.y), isBlack);
+			}
+			drawBox(new Point(point1.x, point1.y-1), new Point(point2.x, point2.y), isBlack, 1);
+//		}
 	}
 
 	/**
@@ -670,6 +690,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param setOn true to turn on, false to turn off.
 	 */
 	public boolean setMXLight(int light, boolean setOn) {
+		if (debugDrawingArea != null) { return false; }
 		int data = 0x20;
 
 		for (int i = 0; i < ledState.length; i++) {
@@ -695,6 +716,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param level Contrast level, (0 1 or 2)
 	 */
 	public boolean setContrastLevel(int level) {
+		if (debugDrawingArea != null) { return false; }
 		try {
 			socket.sendUrgentData(0x40 | level);
 			return true;
@@ -707,6 +729,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param level Brightness level, (0 1 or 2)
 	 */
 	public boolean setBrightnessLevel(int level) {
+		if (debugDrawingArea != null) { return false; }
 		try {
 			socket.sendUrgentData(0x80 | level);
 			return true;
