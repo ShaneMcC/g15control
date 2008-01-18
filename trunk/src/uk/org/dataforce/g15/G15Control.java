@@ -126,17 +126,16 @@ public class G15Control {
 				System.out.println("Config file not found, default created, please edit the file and change the default settings.");
 				PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configFilename)));
 				out.println("<g15control>");
-				out.println("	<!-- This is the path to the g15composer pipe. -->");
+				out.println("	<!-- This is the path to the g15composer pipe. (Deprecated) -->");
 				out.println("	<!-- If this has attribute exec then this is taken to be the path to -->");
 				out.println("	<!-- the g15composer binary and not to an exisitng pipe. -->");
 				out.println("	<!-- If given a binary, a pipe will be created in /tmp -->");
 				out.println("	<!-- if the value of this is empty, or not present, then we do not use the composer and talk -->");
-				out.println("	<!-- to g15daemon directly. (Experimental) -->");
+				out.println("	<!-- to g15daemon directly. -->");
 				out.println("	<!-- Use /usr/bin/g15composer binary: <composer exec=\"\">/usr/bin/g15composer</composer> -->");
 				out.println("	<!-- Use /tmp/composer pipe: <composer>/tmp/composer</composer> -->");
-				out.println("	<!-- Use G15Daemon: <composer/> -->");
-//				out.println("	<!-- This is the text used when loading and as the default window title -->");
-//				out.println("	<welcometext>G15Control</welcometext>");
+				out.println("	<!-- Use G15Daemon: <composer/> or omit this parameter entirely -->");
+				out.println("	<composer />");
 				out.println("	<!-- This is the 'M' button to enable by default -->");
 				out.println("	<defaultmbutton>1</defaultmbutton>");
 				out.println("</g15control>");
@@ -159,16 +158,33 @@ public class G15Control {
 			System.out.println("Sorry, this application does not yet run on this OS.");
 			System.exit(0);
 		} else {
+			needRemoteSocket = (configFile.findElement("remotesocket") != null);
 			String composerLocation = configFile.getValue(configFile.findElement("composer"));
 			if (composerLocation == null) {
-				System.out.println("Communicating with G15Daemon directly. [EXPERIMENTAL]");
+				System.out.println("Communicating with G15Daemon directly.");
 				myScreen = new G15DaemonWrapper();
 			} else {
 				// Make sure we don't have a debugging G15DaemonWrapper if we are wrapping
 				// G15Composer instead.
 				G15DaemonWrapper.debug = false;
 				needRemoteSocket = true;
-				System.out.println("Using "+composerLocation+" for g15composer.");
+				System.out.println("Using "+composerLocation+" for g15composer. [DEPRECATED]");
+				System.out.println("===========================================================");
+				System.out.println("|                         WARNING                         |");
+				System.out.println("===========================================================");
+				System.out.println("| Support for G15Composer will be removed in the future,  |");
+				System.out.println("| it is reccomended that you stop using this now and make |");
+				System.out.println("| sure any plugins work with the new rendering method.    |");
+				System.out.println("===========================================================");
+				if (configFile.getAttribute(configFile.findElement("ignoreDeprecation"), "exec") != null) {
+					System.out.println("| To enable the use of the deprecated G15Composer Wrapper |");
+					System.out.println("| you need to add ignoreDeprecation=\"true\" to your config |");
+					System.out.println("| fine and restart G15Control.                            |");
+					System.out.println("===========================================================");
+					showLoadingComposer(true);
+					try { Thread.sleep(5); } catch (InterruptedException e) { }
+					System.exit(1);
+				}
 				if (new File(composerLocation).exists()) {
 					if (configFile.getAttribute(configFile.findElement("composer"), "exec") != null) {
 						// We need to spawn the g15composer ourself.
@@ -184,7 +200,7 @@ public class G15Control {
 		}
 		
 		try {
-			myControl = RemoteControl.getRemoteControl(this, needRemoteSocket);
+			myControl = RemoteControl.getRemoteControl(this, !needRemoteSocket);
 			controlThread = new Thread(myControl);
 			controlThread.start();
 		} catch (IOException e) {
@@ -214,7 +230,7 @@ public class G15Control {
 	 * This starts the G15Composer process if needed.
 	 */
 	private void startComposer() {
-		showLoadingComposer();
+		showLoadingComposer(false);
 		final String composerApp = configFile.getValue(configFile.findElement("composer"));
 		if (composerApp == null) {
 			System.out.println("G15 Composer not found. Please make sure the <composer>/path/to/pipe</composer> element is in the config file.");
@@ -781,14 +797,34 @@ public class G15Control {
 	}
 	
 	/** Show a temp-screen to show that the composer is being loaded. */
-	private void showLoadingComposer() {
+	private void showLoadingComposer(boolean showWarning) {
 		if (!(loadingScreen instanceof G15DaemonWrapper)) {
 			loadingScreen = new G15DaemonWrapper();
 		}
+		/* Not Needed anymore now that G15DaemonWrapper can do more than draw pixels
 		loadingScreen.drawPixels(loadingScreen.getTopLeftPoint(), PixelDrawings.getInfoConsoleBaseScreen());
 		loadingScreen.drawPixels(new Point(3, 11), PixelDrawings.getLoading());
 		loadingScreen.drawPixels(new Point(35, 11), PixelDrawings.getComposer());
-		loadingScreen.drawPixels(new Point(79, 11), PixelDrawings.getEllipsis());
+		loadingScreen.drawPixels(new Point(79, 11), PixelDrawings.getEllipsis()); */
+		
+		// Some Points
+		final Point almostTopLeft = new Point(loadingScreen.getTopLeftPoint().x+1, loadingScreen.getTopLeftPoint().y+1);
+		final Point almostBottomRight = new Point(loadingScreen.getBottomRightPoint().x-1, loadingScreen.getBottomRightPoint().y-1);
+		final Point textPoint = new Point(loadingScreen.getTopLeftPoint().x+4, loadingScreen.getTopLeftPoint().y+3);
+		
+		// Surrounding Box, including title space
+		loadingScreen.drawRoundedBox(almostTopLeft, almostBottomRight, true, false);
+		loadingScreen.drawLine(new Point(almostTopLeft.x, textPoint.y+6), new Point(almostBottomRight.x, textPoint.y+6), true);
+		
+		// Text
+		loadingScreen.drawText(FontSize.SMALL, textPoint, G15Position.LEFT, "[G15Control]");
+		if (showWarning) {
+			loadingScreen.drawText(FontSize.SMALL, new Point(3, 11), G15Position.LEFT, new String[]{"Not Loading G15Composer!", "Please check the console."});
+		} else {
+			loadingScreen.drawText(FontSize.SMALL, new Point(3, 11), G15Position.LEFT, new String[]{"Loading G15Composer...", "(Note: Use of G15Composer is deprecated.)"});
+		}
+		
+		// Give it that console-y feel by making it white-on-black!
 		loadingScreen.reversePixels(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint());
 		loadingScreen.silentDraw();
 	}
