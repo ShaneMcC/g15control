@@ -33,6 +33,8 @@ import uk.org.dataforce.g15.G15Control;
 import uk.org.dataforce.g15.G15Position;
 import uk.org.dataforce.g15.FontSize;
 import uk.org.dataforce.g15.G15Wrapper;
+import uk.org.dataforce.g15.fonts.G15Font;
+import uk.org.dataforce.g15.fonts.Font_BigNumber;
 
 public class Clock implements Plugin {
 	/** The drawing screen. */
@@ -43,6 +45,9 @@ public class Clock implements Plugin {
 	
 	/** Progress Bar position */
 	int progressPos = 0;
+	
+	/** Clock Font */
+	final G15Font font = new Font_BigNumber(17, 42);
 	
 	/**
 	 * Drawing Mode.
@@ -108,21 +113,24 @@ public class Clock implements Plugin {
 			myScreen.drawText(fontSize, new Point(0, (myScreen.getHeight()/2)-5), G15Position.CENTER, dateFormat.format(new Date()));	
 		} else {
 			final String text = dateFormat.format(new Date());
-			final String largeSpace = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+//			final String largeSpace = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 			int xPos = 0;
 			if (!drawSeconds) {
-				xPos = ClockFont.LARGE_WIDTH+14;
+				xPos = font.getSize().width+14;
 			}
 			for (int i = 0; i < text.length(); ++i) {
 				if (i > 0) {
-					myScreen.drawPixels(new Point(xPos,0), 3, ClockFont.LARGE_HEIGHT, largeSpace);
+//					myScreen.drawPixels(new Point(xPos,0), 3, font.getSize().height, largeSpace);
 					xPos = xPos+3;
 				}
 				int number;
-				try { number = Integer.parseInt(""+text.charAt(i)); }
-				catch (NumberFormatException e) { number = -1; }
-				myScreen.drawPixels(new Point(xPos,0), ClockFont.LARGE_WIDTH, ClockFont.LARGE_HEIGHT, ClockFont.getIntFont(number));
-				xPos = xPos+ClockFont.LARGE_WIDTH;
+				try {
+					number = Integer.parseInt(""+text.charAt(i));
+					myScreen.drawPixels(new Point(xPos,1), font.getSize().width, font.getSize().height, font.getPixels(number+48));
+				} catch (NumberFormatException e) {
+					myScreen.drawPixels(new Point(xPos,1), font.getSize().width, font.getSize().height, font.getPixels(':'));
+				}
+				xPos = xPos+font.getSize().width;
 			}
 		}
 		myScreen.silentDraw();
