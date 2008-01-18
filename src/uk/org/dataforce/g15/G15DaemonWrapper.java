@@ -89,12 +89,12 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	private volatile Thread myThread = null;
 
 	/** Image used to draw on. */
-	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
+	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
 	/** Graphics for the image */
 	private Graphics2D graphicsArea = image.createGraphics();
 
 	/** Previously drawn image. */
-	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
+	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
 	
 	/** FontSlot hashmap */
 	private HashMap<String, Font> fontSlots = new HashMap<String, Font>();
@@ -273,7 +273,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 
 	/** Reset the drawing Image to the last drawn image. */
 	public void clear() {
-		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
+		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
 		graphicsArea = image.createGraphics();
 		graphicsArea.drawImage(oldImage, 0, 0, null);
 	}
@@ -312,7 +312,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException {
-		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_INT_RGB);
+		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
 		oldImage.createGraphics().drawImage(image, 0, 0, null);
 		
 		if (debugDrawingArea == null) {
@@ -571,8 +571,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void fillArea(Point point1, Point point2, boolean isBlack) {
-//		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.setColor(Color.red);
+		graphicsArea.setColor(convertBoolean(isBlack));
 		final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
 		final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
 		graphicsArea.fillRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));

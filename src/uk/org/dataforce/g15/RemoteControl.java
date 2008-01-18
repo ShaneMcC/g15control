@@ -85,7 +85,18 @@ public class RemoteControl implements Runnable {
 		myOwner = owner;
 		this.noSocket = noSocket;
 		if (!noSocket) {
-			serverSocket = new ServerSocket(33523);
+			owner.getConfig().reset();
+			String configPort = owner.getConfig().getAttribute(owner.getConfig().findElement("remotesocket"), "port");
+			int port = 33523;
+			if (configPort != null) {
+				try {
+					port = Integer.parseInt(configPort);
+				} catch (NumberFormatException nfe) { }
+			}
+			System.out.println("Attempting to create RemoteControl on port "+configPort);
+			serverSocket = new ServerSocket(port);
+		} else {
+			System.out.println("Creating port-less RemoteControl");
 		}
 	}
 	
