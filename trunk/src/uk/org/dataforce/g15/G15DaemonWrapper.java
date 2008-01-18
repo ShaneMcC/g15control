@@ -521,7 +521,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 */
 	public void drawPixels(Point point, int width, int height, String pixels) {
 		if (pixels.length() < (width*height)) {
-			System.out.println("[drawPixels] Not recieved enough pixels. Not drawing.");
+			System.out.println("[drawPixels] Not recieved enough pixels. Not drawing. (Wanted: "+(width*height)+" Got: "+pixels.length()+")");
 			return;
 		} else if (pixels.length() > (width*height)) {
 			System.out.println("[drawPixels] Recieved more pixels than space to draw. This may look wrong!");
@@ -669,7 +669,9 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		
 		final double percent = (100.0/maxPosition)*position;
 		// The 0.01d here solves some rounding problems.
+		// its not ideal, its not right, but it works. stupid floating point crap.
 		final int length = (int)Math.round(0.01d + ((point2.x-(point1.x+1))/100.0)*percent);
+		
 		
 //		if (barType == ProgressBarType.TYPE1) {
 			if (emulateComposer && ((point2.x - point1.x) < 0 || (point2.y - point1.y) < 0)) {

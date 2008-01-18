@@ -57,6 +57,26 @@ public abstract class G15Font {
 	}
 	
 	/**
+	 * Get the pixels for this font for the requested character.
+	 * Suitible for passing to drawPixels()
+	 *
+	 * @param character to get pixels for.
+	 */
+	public String getPixels(final int character) {
+		final StringBuffer buffer = new StringBuffer(size.width*size.height);
+		for (int y = 0; y < size.height ; ++y) {
+			for (int x = 0; x < size.width ; ++x) {
+				if (getPixelColor(character, x, y) == Color.black) {
+					buffer.append('1');
+				} else {
+					buffer.append('0');
+				}
+			}
+		}
+		return buffer.toString();
+	}
+	
+	/**
 	 * Get the size of this font.
 	 *
 	 * @return size of this font.
