@@ -92,9 +92,6 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	private BufferedImage image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
 	/** Graphics for the image */
 	private Graphics2D graphicsArea = image.createGraphics();
-
-	/** Previously drawn image. */
-	private BufferedImage oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
 	
 	/** FontSlot hashmap */
 	private HashMap<String, Font> fontSlots = new HashMap<String, Font>();
@@ -154,7 +151,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 			try {
 				socket = new Socket("127.0.0.1", 15550);
 				socket.setOOBInline(true);
-				out = new PrintWriter(socket.getOutputStream(), true);
+				out = new PrintWriter(socket.getOutputStream(), false);
 				in = new DataInputStream(socket.getInputStream());
 				
 				byte[] inByte = new byte[16];
@@ -271,13 +268,6 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		}
 	}
 
-	/** Reset the drawing Image to the last drawn image. */
-	public void clear() {
-		image = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-		graphicsArea = image.createGraphics();
-		graphicsArea.drawImage(oldImage, 0, 0, null);
-	}
-
 	/**
 	 * Get the G15-Char for the given RGB value.
 	 *
@@ -312,17 +302,15 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException {
-		oldImage = new BufferedImage(LCD_WIDTH, LCD_HEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-		oldImage.createGraphics().drawImage(image, 0, 0, null);
-		
 		if (debugDrawingArea == null) {
 			for (int y = 0; y < LCD_HEIGHT ; ++y) {
 				for (int x = 0; x < LCD_WIDTH ; ++x) {
-					out.print(getChar(oldImage.getRGB(x,y)));
+					out.print(getChar(image.getRGB(x,y)));
 				}
 			}
+			out.flush();
 		} else {
-			debugDrawingArea.drawImage(oldImage, 0, 0, LCD_WIDTH*myScale, LCD_HEIGHT*myScale, null);
+			debugDrawingArea.drawImage(image, 0, 0, LCD_WIDTH*myScale, LCD_HEIGHT*myScale, null);
 		}
 	}
 	

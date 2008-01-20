@@ -64,9 +64,6 @@ public abstract class G15Wrapper {
 		} catch (InterruptedException e) {}
 	}
 	
-	/** Clear the drawing commands. */
-	public abstract void clear();
-	
 	/**
 	 * Draw to the screen
 	 *

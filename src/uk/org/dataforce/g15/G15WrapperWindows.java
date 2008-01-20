@@ -30,9 +30,6 @@ import java.awt.Point;
  * This class has not been implemented yet.
  */
 public class G15WrapperWindows extends G15Wrapper {
-	/** Clear the drawing commands. */
-	public void clear() { /* Not Implemented */ }
-	
 	/**
 	 * Draw to the screen
 	 *
