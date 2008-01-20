@@ -102,6 +102,8 @@ public class Amarok implements Plugin {
 	
 	private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 	
+	private String lastArtist = "";
+	
 	/**
 	 * Called when the plugin is loaded.
 	 *
@@ -182,6 +184,13 @@ public class Amarok implements Plugin {
 					}*/
 
 					final String artist = dcop.sendFunctionSingle(PLAYER_ARTIST);
+					if (!lastArtist.isEmpty()) {
+						if (!lastArtist.equalsIgnoreCase(artist)) {
+							lastArtist = artist;
+							myController.requestFocus(this, 10);
+						}
+					}
+					lastArtist = artist;
 					final String title = dcop.sendFunctionSingle(PLAYER_TITLE);
 					String time = OUTPUT_TIMESPLIT+dcop.sendFunctionSingle(PLAYER_TOTALTIME);
 					

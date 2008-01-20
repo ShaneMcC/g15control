@@ -61,7 +61,7 @@ public abstract class G15Wrapper {
 	public static final void waitFor(long delay) {
 		try {
 			Thread.sleep(delay);
-		} catch (InterruptedException e) {}
+		} catch (InterruptedException e) { System.out.println("waitFor Interrupted"); }
 	}
 	
 	/**
