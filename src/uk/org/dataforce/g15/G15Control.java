@@ -89,6 +89,9 @@ public class G15Control {
 	/** Location used when we spawn our own G15Composer. */
 	String myComposerLocation = "";
 	
+	/** Priority of current screen */
+	int screenPriority = 0;
+	
 	/**
 	 * Countdown (1/2 second intervals) to clear "main" text.
 	 * "main" text is cleared when this is exactly 0
@@ -549,20 +552,40 @@ public class G15Control {
 		}
 	}
 	
+	/**
+	 * Allows a plugin to request screen focus
+	 *
+	 * @param plugin Plugin that wants the screen
+	 * @param priority Priority of request. (A screen will only be granted focus
+	 *        if the current screen is a lower priority.)
+	 * @return true if focus was granted.
+	 */
+	public boolean requestFocus(final Plugin plugin, final int priority) {
+		if (priority > screenPriority) {
+			for (int i = 0; i < allScreens.size(); ++i) {
+				if (pluginManager.getPlugin(allScreens.get(i)) == plugin) {
+					screenPriority = priority;
+					changeScreen(i);
+					flashLCD();
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	/** Flash the LCD */
 	private void flashLCD() {
 		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);
-		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);
+		myScreen.waitFor(200);
 		myScreen.setBrightnessLevel(0);
-		myScreen.waitFor(100);
+		myScreen.waitFor(200);
 		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);
+		myScreen.waitFor(200);
 		myScreen.setBrightnessLevel(0);
-		myScreen.waitFor(100);
+		myScreen.waitFor(200);
 		myScreen.setBrightnessLevel(2);
-		myScreen.waitFor(100);	
+		myScreen.waitFor(200);
 	}
 		
 	/** What todo when LCD1 is pressed. */
@@ -732,23 +755,35 @@ public class G15Control {
 	
 	/** Called when the changeScreen button is pressed. */
 	private void changeScreen() {
+		changeScreen(++currentScreen);
+	}
+	
+	/**
+	 * Called to change to a specific screen.
+	 *
+	 * @param screenID Screen to change to.
+	 */
+	private void changeScreen(final int screenID) {
+		// reset the screen priority
+		screenPriority = 0;
 		// Disable the menu.
 		if (isMenu) { callLCD1(); }
 		if (allScreens.size() < 1) {
 			drawMainText("No plugins loaded.");
 			return;
 		}
-		if (currentPlugin != null) { currentPlugin.onDeactivate();	}
-		if (currentScreen >= allScreens.size()-1) {
+		if (currentPlugin != null) { currentPlugin.onDeactivate(); }
+		if (screenID > allScreens.size()-1) {
 			if (currentPlugin != null) { myScreen.clearScreen(false); }
 			currentPlugin = null;
 			drawMe(false);
 			doRedraw();
 			currentScreen = -1;
-		} else { 
+		} else {
 			myScreen.clearScreen(false);
 			myScreen.silentDraw();
-			currentPlugin = pluginManager.getPlugin(allScreens.get(++currentScreen));
+			currentScreen = screenID;
+			currentPlugin = pluginManager.getPlugin(allScreens.get(screenID));
 			currentPlugin.onActivate();
 		}
 	}
