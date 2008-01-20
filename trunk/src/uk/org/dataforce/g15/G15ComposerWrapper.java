@@ -66,12 +66,7 @@ public class G15ComposerWrapper extends G15Wrapper {
 			return 0;
 		}
 	}
-
-	/** Clear the drawing commands. */
-	public void clear() {
-		instructions.clear();
-	}
-
+	
 	/**
 	 * Draw to the screen
 	 *
