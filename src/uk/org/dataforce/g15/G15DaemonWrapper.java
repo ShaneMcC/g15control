@@ -318,7 +318,7 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		if (debugDrawingArea == null) {
 			for (int y = 0; y < LCD_HEIGHT ; ++y) {
 				for (int x = 0; x < LCD_WIDTH ; ++x) {
-					out.printf("%c", getChar(oldImage.getRGB(x,y)));
+					out.print(getChar(oldImage.getRGB(x,y)));
 				}
 			}
 		} else {
