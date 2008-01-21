@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2008 Shane Mc Cormack
+ * Copyright (c) 2006-2008 Chris Smith, Shane Mc Cormack, Gregory Holmes
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,62 +20,85 @@
  * SOFTWARE.
  *
  * SVN: $Id$
+ *
+ * Based on Plugin code from DMDirc (DMDirc.com)
  */
 package uk.org.dataforce.g15.plugins;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.DataInputStream;
-import java.io.File;
 import java.io.IOException;
 
-import java.util.Hashtable;
-
 public class PluginClassLoader extends ClassLoader {
-	/** Directory where plugins are stored. */
-	String myDir;
-	
-	/** Name of the package I am loading. */
-	String myPackage = "";
+	/** The plugin Info object for the plugin we are loading */
+	final PluginInfo pluginInfo;
 	
 	/**
 	 * Create a new PluginClassLoader.
 	 *
 	 * @param directory Directory where plugins are stored.
 	 */
-	public PluginClassLoader(String directory) {
-		myDir = directory;
+	public PluginClassLoader(final PluginInfo info) {
+		super();
+		pluginInfo = info;
 	}
 	
 	/**
 	 * Load the plugin with the given className
 	 *
-	 * @param className Class Name of plugin
+	 * @param name Class Name of plugin
 	 * @return plugin class
 	 * @throws ClassNotFoundException if the class to be loaded could not be found.
 	 */
 	public Class< ? > loadClass(final String name) throws ClassNotFoundException {
+		ResourceManager res;
+		try {
+			res = pluginInfo.getResourceManager();
+		} catch (IOException ioe) {
+			throw new ClassNotFoundException("Error with resourcemanager", ioe);
+		}
+	
 		Class< ? > loadedClass = null;
 
-		// Check to make sure we only load things in our own package!
-		if (myPackage.length() == 0) {
-			int i = name.lastIndexOf('.');
-			if (i != -1) { myPackage = name.substring(0, i); }
-			else { return getParent().loadClass(name); }
+		final String fileName = name.replace('.', '/')+".class";
+		try {
+			if (pluginInfo.isPersistant(name) || !res.resourceExists(fileName)) {
+				if (!pluginInfo.isPersistant(name)) {
+					return GlobalClassLoader.getGlobalClassLoader().loadClass(name);
+				} else {
+					// Try to load class from previous load.
+					try {
+						return GlobalClassLoader.getGlobalClassLoader().loadClass(name, pluginInfo);
+					} catch (Exception e) {
+						/* Class doesn't exist, we load it outself below */
+					}
+				}
+			}
+		} catch (NoClassDefFoundError e) {
+			throw new ClassNotFoundException("Error loading '"+name+"' (wanted by "+pluginInfo.getName()+") -> "+e.getMessage(), e);
 		}
-		if (!name.startsWith(myPackage)) { return getParent().loadClass(name); }
+		
+		
+		// Don't duplicate a class
+		Class existing = findLoadedClass(name);
+		if (existing != null) { return existing; }
 		
 		// We are ment to be loading this one!
-		final String fileName = myDir + File.separator + name.replace(myDir+".", "").replace('.', File.separatorChar) + ".class";
 		byte[] data = null;
-
-		try {
-			data = loadClassData(fileName);
-		} catch (IOException e) {
-			throw new ClassNotFoundException(e.getMessage());
+		
+		if (res.resourceExists(fileName)) {
+			data = res.getResourceBytes(fileName);
+		} else {
+			throw new ClassNotFoundException("Resource '"+name+"' (wanted by "+pluginInfo.getName()+") does not exist.");
 		}
 		
-		loadedClass = defineClass(name, data, 0, data.length);
+		try {
+			if (pluginInfo.isPersistant(name)) {
+				GlobalClassLoader.getGlobalClassLoader().defineClass(name, data);
+			} else {
+				loadedClass = defineClass(name, data, 0, data.length);
+			}
+		} catch (NoClassDefFoundError e) {
+			throw new ClassNotFoundException(e.getMessage(), e);
+		}
 		
 		if (loadedClass == null) {
 			throw new ClassNotFoundException("Could not load " + name);
@@ -84,22 +107,5 @@ public class PluginClassLoader extends ClassLoader {
 		}
 		
 		return loadedClass;
-	}
-	
-	/**
-	 * Load the class from the .class file
-	 *
-	 * @param filename Filename to load from
-	 * @throws IOException when the file doesn't exist or can't be read
- 	 */
-	public byte[] loadClassData(String filename) throws IOException {
-		final File file = new File(filename);
-		final byte[] fileBuffer = new byte[(int)file.length()];
-		final DataInputStream fileInput = new DataInputStream(new FileInputStream(file));
-		
-		fileInput.readFully(fileBuffer);
-		fileInput.close();
-		
-		return fileBuffer;
 	}
 }

@@ -20,83 +20,87 @@
  * SOFTWARE.
  *
  * SVN: $Id$
+ *
+ * Based on Plugin code from DMDirc (DMDirc.com)
  */
 package uk.org.dataforce.g15.plugins;
 
 import uk.org.dataforce.g15.G15Control;
 import uk.org.dataforce.g15.G15Wrapper;
 
-public interface Plugin {
+public abstract class Plugin implements Comparable<Plugin> {
 	/**
 	 * Called when the plugin is loaded.
 	 *
 	 * @param control The G15Control that owns this plugin
 	 * @param wrapper The screen that this plugin owns
 	 */
-	public void onLoad(G15Control control, G15Wrapper wrapper);
+	public abstract void onLoad(G15Control control, G15Wrapper wrapper);
 	
 	/**
 	 * Called if the screen changes.
 	 *
 	 * @param wrapper The screen that this plugin now owns
 	 */
-	public void changeScreen(G15Wrapper wrapper);
-		
+	public abstract void changeScreen(G15Wrapper wrapper);
 	
 	/**
 	 * Called when the plugin is about to be unloaded.
 	 */
-	public void onUnload();
+	public abstract void onUnload();
 	
 	/**
 	 * Called every 1/2 second for drawing related tasks when this screen is active.
 	 */
-	public void onRedraw();
+	public abstract void onRedraw();
 	
 	/**
 	 * Called when this plugin becomes active.
 	 * This needs to FULLY redraw the screen.
 	 */
-	public void onActivate();
+	public abstract void onActivate();
 	
 	/**
 	 * Called when this plugin becomes active.
 	 */
-	public void onDeactivate();
+	public abstract void onDeactivate();
 	
 	/**
 	 * Called when LCD Button 1 is pressed.
 	 */
-	public void onLCD1();
+	public void onLCD1() { }
 	
 	/**
 	 * Called when LCD Button 2 is pressed.
 	 */
-	public void onLCD2();
+	public void onLCD2() { }
 	
 	/**
 	 * Called when LCD Button 3 is pressed.
 	 */
-	public void onLCD3();
+	public void onLCD3() { }
 		
 	/**
 	 * Called when LCD Button 4 is pressed.
 	 */
-	public void onLCD4();
+	public void onLCD4() { }
 	
 	/**
-	 * Get the plugin version
+	 * Check any further Prerequisites for this plugin to load that can not be
+	 * checked using metainfo.
 	 *
-	 * @return Plugin Version
+	 * @return true if the plugin can be used, else false.
 	 */
-	public int getVersion();
+	public boolean checkPrerequisites() { return true; }
 	
 	/**
-	 * Get information about the plugin.
-	 * result[0] == Author
-	 * result[1] == Description
+	 * Compares this object with the specified object for order.
+	 * Returns a negative integer, zero, or a positive integer as per String.compareTo();
 	 *
-	 * @return Information about the plugin
+	 * @param o Object to compare to
+	 * @return a negative integer, zero, or a positive integer.
 	 */
-	public String[] getInformation();
+	public int compareTo(Plugin o) {
+		return toString().compareTo(o.toString());
+	}
 }

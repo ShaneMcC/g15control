@@ -38,6 +38,7 @@ import java.text.SimpleDateFormat;
 import org.w3c.dom.Element;
 
 import uk.org.dataforce.g15.plugins.Plugin;
+import uk.org.dataforce.g15.plugins.PluginInfo;
 import uk.org.dataforce.g15.plugins.PluginManager;
 
 import uk.org.dataforce.g15.process.ProcessDetails;
@@ -64,7 +65,7 @@ public class G15Control {
 	/** Current active plugin. */
 	private Plugin currentPlugin = null;
 	/** Plugin Manager */
-	private PluginManager pluginManager = new PluginManager();
+	private PluginManager pluginManager = null;
 	
 	/** Remote Control. */
 	private RemoteControl myControl;
@@ -89,7 +90,10 @@ public class G15Control {
 	/** Location used when we spawn our own G15Composer. */
 	String myComposerLocation = "";
 	
-	/** Priority of current screen */
+	/**
+	 * Priority of current screen.
+	 * This deteriorates by 1 every redraw.
+	 */
 	int screenPriority = 0;
 	
 	/**
@@ -113,21 +117,38 @@ public class G15Control {
 	/** Menu. */
 	private G15ControlMenu myMenu = null;
 	
-	/** Have we finished loading? */
-	private boolean hasLoaded;
-	
 	/** Are we running with a WIP version of G15Daemon? */
 	private boolean isWIP = false;
+
+	/** Are we showing the splash screen? */
+	private boolean isSplash = false;
+
+	/**
+	 * Get the configuration directory
+	 *
+	 * @return Config directory
+	 */
+	public static String getConfigDir() {
+		final String sep = System.getProperty("file.separator");
+		final boolean isWindows = System.getProperty("os.name").startsWith("Windows");
+		final String dirname = System.getProperty("user.home")+sep+((isWindows) ? "Application Data"+sep : ".")+"g15control"+sep;
+		
+		return dirname;
+	}
 
 	/**
 	 * Main application.
 	 */
 	public void main(String configFilename) {
-		System.out.println("Using Config: "+configFilename);	
-		if (!new File(configFilename).exists()) {
+		String configDirname = getConfigDir();
+		System.out.println("Using Config: "+configDirname+configFilename);
+		pluginManager = PluginManager.getPluginManager();
+		if (!new File(configDirname+configFilename).exists()) {
 			try {
+				final File dir = new File(configDirname);
+				if (!dir.exists()) { dir.mkdir(); }
 				System.out.println("Config file not found, default created, please edit the file and change the default settings.");
-				PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configFilename)));
+				PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configDirname+configFilename)));
 				out.println("<g15control>");
 				out.println("	<!-- This is the path to the g15composer pipe. (Deprecated) -->");
 				out.println("	<!-- If this has attribute exec then this is taken to be the path to -->");
@@ -148,7 +169,7 @@ public class G15Control {
 			}
 			System.exit(0);
 		}
-		configFile = new XMLParser(configFilename);
+		configFile = new XMLParser(configDirname+configFilename);
 		G15DaemonWrapper.debug = (configFile.findElement("debug") != null);
 		G15DaemonWrapper.isWIP = (configFile.findElement("wip") != null);
 		try {
@@ -259,7 +280,7 @@ public class G15Control {
 			myScreen = new G15ComposerWrapper(myComposerLocation);
 			
 			for (int i = 0 ; i < allScreens.size(); ++i) {
-				pluginManager.getPlugin(allScreens.get(i)).changeScreen(myScreen);
+				pluginManager.getPluginInfo(allScreens.get(i)).getPlugin().changeScreen(myScreen);
 			}
 		}
 	}
@@ -278,6 +299,7 @@ public class G15Control {
 		if (defaultScreenTitle == null) { defaultScreenTitle = screenTitle; }
 		
 		if (isFirst) {
+			isSplash = true;
 			drawSplashText("Loading..");
 			myScreen.silentDraw();
 			
@@ -289,6 +311,7 @@ public class G15Control {
 			drawSplashText("Loading..");
 			myScreen.waitFor(1000);
 			drawSplashText("Loaded!");
+			isSplash = false;
 			if (currentPlugin != null) {
 				myScreen.clearScreen(false);
 				currentPlugin.onActivate();
@@ -453,6 +476,7 @@ public class G15Control {
 			myScreen.drawText(FontSize.SMALL, new Point(4, 2), G15Position.LEFT, screenTitle);
 			myScreen.silentDraw();
 		}
+		if (screenPriority > 0) { screenPriority--; }
 	}
 	
 	/**
@@ -545,7 +569,7 @@ public class G15Control {
 	 * @param text Text to draw
 	 */
 	private void drawSplashText(String text) {
-		if (!hasLoaded) {
+		if (isSplash) {
 			myScreen.fillArea(new Point(3,3), new Point(156, 12), false);
 			myScreen.drawText(FontSize.SMALL, new Point(70, 5), G15Position.CENTER, text);
 			myScreen.silentDraw();
@@ -563,7 +587,7 @@ public class G15Control {
 	public boolean requestFocus(final Plugin plugin, final int priority) {
 		if (priority > screenPriority) {
 			for (int i = 0; i < allScreens.size(); ++i) {
-				if (pluginManager.getPlugin(allScreens.get(i)) == plugin) {
+				if (pluginManager.getPluginInfo(allScreens.get(i)).getPlugin() == plugin) {
 					screenPriority = priority;
 					changeScreen(i);
 					flashLCD();
@@ -646,25 +670,25 @@ public class G15Control {
 				callLCD1();
 				drawStatusText("Config reloaded");
 				clearMainCount = 6;
-				myScreen.drawRoundedBox(myScreen.getTopLeftPoint(), myScreen.getBottomRightPoint(), true, false);
 			} else if (myMenu.getItemSubString().equals("UNLOAD1")) {
 				myMenu = new G15ControlMenu("Unload Plugin");
-				for (String pluginName : pluginManager.getNames()) {
-					myMenu.addItem(pluginName.substring(pluginName.lastIndexOf('.')+1), "UNLOAD2 "+pluginName);
+				for (PluginInfo plugin : pluginManager.getPluginInfos()) {
+					myMenu.addItem(plugin.getNiceName(), "UNLOAD2 "+plugin.getFilename());
 				}
 				myMenu.addItem("Back to Main Menu", "BACKTOMAIN");
 				closeMenu = false;
 				drawMenu(true);
 			} else if (myMenu.getItemSubString().substring(0, 7).equals("UNLOAD2")) {
 				String pluginName = myMenu.getItemSubString().substring(8);
+				String pluginNiceName = pluginManager.getPluginInfo(pluginName).getNiceName();
 				callLCD1();
-				drawMainText("Unloading: "+pluginName.substring(pluginName.lastIndexOf('.')+1));
+				drawMainText("Unloading: "+pluginNiceName);
 				drawMainText("");
 				clearMainCount = 6;
 				if (pluginManager.delPlugin(pluginName)) {
-					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" unloaded");
+					drawStatusText("Plugin "+pluginNiceName+" unloaded");
 				} else {
-					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to unload");
+					drawStatusText("Plugin "+pluginNiceName+" failed to unload");
 				}
 				for (int i = 0; i < allScreens.size(); ++i) {
 					if (allScreens.get(i).equalsIgnoreCase(pluginName)) {
@@ -676,24 +700,25 @@ public class G15Control {
 				
 			} else if (myMenu.getItemSubString().equals("RELOAD1")) {
 				myMenu = new G15ControlMenu("Reload Plugin");
-				for (String pluginName : pluginManager.getNames()) {
-					myMenu.addItem(pluginName.substring(pluginName.lastIndexOf('.')+1), "RELOAD2 "+pluginName);
+				for (PluginInfo plugin : pluginManager.getPluginInfos()) {
+					myMenu.addItem(plugin.getNiceName(), "RELOAD2 "+plugin.getFilename());
 				}
 				myMenu.addItem("Back to Main Menu", "BACKTOMAIN");
 				closeMenu = false;
 				drawMenu(true);
 			} else if (myMenu.getItemSubString().substring(0, 7).equals("RELOAD2")) {
 				String pluginName = myMenu.getItemSubString().substring(8);
+				String pluginNiceName = pluginManager.getPluginInfo(pluginName).getNiceName();
 				callLCD1();
-				drawMainText("Reloading: "+pluginName.substring(pluginName.lastIndexOf('.')+1));
+				drawMainText("Reloading: "+pluginNiceName);
 				drawMainText("");
 				final Boolean reloadState = pluginManager.reloadPlugin(pluginName);
 				clearMainCount = 6;
 				if (reloadState) {
-					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" reloaded");
-					pluginManager.getPlugin(pluginName).onLoad(this, myScreen);
+					drawStatusText("Plugin "+pluginNiceName+" reloaded");
+					pluginManager.getPluginInfo(pluginName).getPlugin().onLoad(this, myScreen);
 				} else {
-					drawStatusText("Plugin "+pluginName.substring(pluginName.lastIndexOf('.')+1)+" failed to reload");
+					drawStatusText("Plugin "+pluginNiceName+" failed to reload");
 					for (int i = 0; i < allScreens.size(); ++i) {
 						if (allScreens.get(i).equalsIgnoreCase(pluginName)) {
 							allScreens.remove(i);
@@ -783,7 +808,7 @@ public class G15Control {
 			myScreen.clearScreen(false);
 			myScreen.silentDraw();
 			currentScreen = screenID;
-			currentPlugin = pluginManager.getPlugin(allScreens.get(screenID));
+			currentPlugin = pluginManager.getPluginInfo(allScreens.get(screenID)).getPlugin();
 			currentPlugin.onActivate();
 		}
 	}
@@ -798,12 +823,13 @@ public class G15Control {
 	/** 
 	 * Load a plugin
 	 *
-	 * @param plugin Class name of plugin
+	 * @param plugin Jar name of plugin
 	 * @return true/false is plugin loaded
 	 */
 	private boolean loadPlugin(String plugin) {
-		if (pluginManager.addPlugin(plugin, plugin)) {
-			pluginManager.getPlugin(plugin).onLoad(this, myScreen);
+		if (pluginManager.addPlugin(plugin)) {
+			pluginManager.getPluginInfo(plugin).loadPlugin();
+			pluginManager.getPluginInfo(plugin).getPlugin().onLoad(this, myScreen);
 			allScreens.add(plugin);
 			return true;
 		} else {
@@ -820,11 +846,11 @@ public class G15Control {
 		String pluginName;
 		for (Element pluginElement : elements) {
 			pluginName = configFile.getValue(pluginElement);
-			drawSplashText("Loading Plugin: "+pluginName.substring(pluginName.lastIndexOf(".")+1)+"...");
+			drawSplashText("Loading Plugin: "+pluginName+"...");
 			
 			if (loadPlugin(pluginName)) {
 				if (configFile.getAttribute(pluginElement, "default") != null) {
-					currentPlugin = pluginManager.getPlugin(pluginName);
+					currentPlugin = pluginManager.getPluginInfo(pluginName).getPlugin();
 					currentScreen = allScreens.size()-1;
 				}
 			}
@@ -873,9 +899,7 @@ public class G15Control {
 	 * @param args Array of strings representing each world given on the command line when starting the application.
 	 */
 	public static void main(String[] args) {
-		String filename = System.getProperty("user.home")+System.getProperty("file.separator");
-		if (!System.getProperty("os.name").startsWith("Windows")) { filename = filename+"."; }
-		filename = filename+"g15control.config";
+		final String filename = "g15control.config";
 		
 		G15Control control = new G15Control();
 		control.main(filename);

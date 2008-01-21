@@ -39,7 +39,7 @@ import uk.org.dataforce.g15.G15Position;
 import uk.org.dataforce.g15.FontSize;
 import uk.org.dataforce.g15.G15Wrapper;
 
-public class Stats implements Plugin {
+public class Stats extends Plugin {
 	/** The drawing screen. */
 	G15Wrapper myScreen;
 	

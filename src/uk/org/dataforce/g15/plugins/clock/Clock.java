@@ -36,7 +36,7 @@ import uk.org.dataforce.g15.G15Wrapper;
 import uk.org.dataforce.g15.fonts.G15Font;
 import uk.org.dataforce.g15.fonts.Font_BigNumber;
 
-public class Clock implements Plugin {
+public class Clock extends Plugin {
 	/** The drawing screen. */
 	G15Wrapper myScreen;
 	

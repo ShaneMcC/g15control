@@ -38,7 +38,7 @@ import uk.org.dataforce.g15.ProgressBarType;
 import uk.org.dataforce.g15.G15Wrapper;
 import uk.org.dataforce.g15.XMLParser;
 
-public class Amarok implements Plugin {
+public class Amarok extends Plugin {
 	/** Default Menu Buttons */
 	private String[] defaultMenuButtons = new String[]{"ShowOSD", "", "", "PB-", "T+"};
 	

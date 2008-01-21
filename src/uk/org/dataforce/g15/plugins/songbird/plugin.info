@@ -1,0 +1,8 @@
+mainclass=uk.org.dataforce.g15.plugins.songbird.Songbird
+version=2
+friendlyversion=0.2
+author=Dataforce <Dataforce@Dataforce.org.uk>
+description=Displays Songbird information on the LCD
+name=songbird
+nicename=Songbird Plugin
+minversion=0

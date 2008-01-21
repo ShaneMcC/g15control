@@ -43,7 +43,7 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.Hashtable;
 
-public class Songbird implements Plugin {
+public class Songbird extends Plugin {
 	/** Default Menu Buttons */
 	private String[] defaultMenuButtons = new String[]{"", "", "", "PB-", "T+"};
 

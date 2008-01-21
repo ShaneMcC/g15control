@@ -1,0 +1,8 @@
+mainclass=uk.org.dataforce.g15.plugins.stats.Stats
+version=2
+friendlyversion=0.2
+author=Dataforce <Dataforce@Dataforce.org.uk>
+description=Displays System stats on the LCD
+name=stats
+nicename=Stats Plugin
+minversion=0
