@@ -302,15 +302,17 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @throws java.io.IOException Throws this if the socket is not able to be written to
 	 */
 	public void draw() throws IOException {
-		if (debugDrawingArea == null) {
-			for (int y = 0; y < LCD_HEIGHT ; ++y) {
-				for (int x = 0; x < LCD_WIDTH ; ++x) {
-					out.print(getChar(image.getRGB(x,y)));
+		synchronized (image) {
+			if (debugDrawingArea == null) {
+				for (int y = 0; y < LCD_HEIGHT ; ++y) {
+					for (int x = 0; x < LCD_WIDTH ; ++x) {
+						out.print(getChar(image.getRGB(x,y)));
+					}
 				}
+				out.flush();
+			} else {
+				debugDrawingArea.drawImage(image, 0, 0, LCD_WIDTH*myScale, LCD_HEIGHT*myScale, null);
 			}
-			out.flush();
-		} else {
-			debugDrawingArea.drawImage(image, 0, 0, LCD_WIDTH*myScale, LCD_HEIGHT*myScale, null);
 		}
 	}
 	
@@ -377,27 +379,29 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param text line to draw
 	 */
 	public void drawText(FontSize size, Point point, G15Position position, String text) {
-		G15Font font = size.getFont();
-		if (font != null) {
-			int startPos = point.x;
-			int fontWidth = text.length()*font.getSize().width;
-			if (position == G15Position.CENTER) {
-				if (emulateComposer) {
-					startPos = 0;
+		synchronized (image) {
+			G15Font font = size.getFont();
+			if (font != null) {
+				int startPos = point.x;
+				int fontWidth = text.length()*font.getSize().width;
+				if (position == G15Position.CENTER) {
+					if (emulateComposer) {
+						startPos = 0;
+					}
+					int midpoint = startPos+(LCD_WIDTH-startPos)/2;
+					startPos = midpoint-(fontWidth/2);
+				} else if (position == G15Position.RIGHT) {
+					startPos = LCD_WIDTH-fontWidth;
 				}
-				int midpoint = startPos+(LCD_WIDTH-startPos)/2;
-				startPos = midpoint-(fontWidth/2);
-			} else if (position == G15Position.RIGHT) {
-				startPos = LCD_WIDTH-fontWidth;
-			}
-		
-			for (int i = 0; i < text.length(); i++) {
-				for (int x = 0; x < font.getSize().width; x++) {
-					for (int y = 0; y < font.getSize().height; y++) {
-						int ypos = point.y+y;
-						int xpos = startPos+x+(font.getSize().width*i);
-						if (xpos >= 0 && xpos < LCD_WIDTH && ypos >= 0 && ypos < LCD_HEIGHT) {
-							image.setRGB(xpos, ypos, font.getPixelColor(text.charAt(i), x, y).getRGB());
+			
+				for (int i = 0; i < text.length(); i++) {
+					for (int x = 0; x < font.getSize().width; x++) {
+						for (int y = 0; y < font.getSize().height; y++) {
+							int ypos = point.y+y;
+							int xpos = startPos+x+(font.getSize().width*i);
+							if (xpos >= 0 && xpos < LCD_WIDTH && ypos >= 0 && ypos < LCD_HEIGHT) {
+								image.setRGB(xpos, ypos, font.getPixelColor(text.charAt(i), x, y).getRGB());
+							}
 						}
 					}
 				}
@@ -453,50 +457,51 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param text Text to output
 	 */
 	public void drawFont(int fontSlot, int size, Point point, boolean isBlack, G15Position position, String[] text) {
-		final String slotName = "Font-"+fontSlot + ((emulateComposer) ? "-"+size : "");
-		if (!fontSlots.containsKey(slotName)) {
-			return;
-		}
-		
-		final Font font = fontSlots.get(slotName);
-		graphicsArea.setFont(font);
-		
-		// Now we can get the bounds and metrics of each line.
-		final Rectangle2D[] bounds = new Rectangle2D[text.length];
-		final LineMetrics[] metrics = new LineMetrics[text.length];
-		
-		for (int i = 0; i < text.length; ++i) {
-			bounds[i] = font.getStringBounds(text[i], graphicsArea.getFontRenderContext());
-			metrics[i] = font.getLineMetrics(text[i], graphicsArea.getFontRenderContext());
-		}
-		
-		// Start location (point is bottom-left
-		int currentTop = point.y;
-		for (int i = 0; i < text.length; ++i) {
-			// Drawing is done in the bottom left corner, so we add the height
-			// of the line, to the current "top" position, to find out where we should
-			// draw.
-			currentTop += bounds[i].getHeight();
-			// However, we need to take into account the overhang in characters like y and g
-			int y = Math.round(currentTop - metrics[i].getDescent());
-			
-			// Now to get where the left should go.
-			int x = point.x;
-			int fontWidth = (int)bounds[i].getWidth();
-			if (position == G15Position.CENTER) {
-				if (emulateComposer) {
-					x = 0;
-				}
-				int midpoint = x+(LCD_WIDTH-x)/2;
-				x = midpoint-(fontWidth/2);
-			} else if (position == G15Position.RIGHT) {
-				x = LCD_WIDTH-fontWidth;
+		synchronized (image) {
+			final String slotName = "Font-"+fontSlot + ((emulateComposer) ? "-"+size : "");
+			if (!fontSlots.containsKey(slotName)) {
+				return;
 			}
 			
-			// And draw.
-			graphicsArea.drawString(text[i], x, y);
+			final Font font = fontSlots.get(slotName);
+			graphicsArea.setFont(font);
+			
+			// Now we can get the bounds and metrics of each line.
+			final Rectangle2D[] bounds = new Rectangle2D[text.length];
+			final LineMetrics[] metrics = new LineMetrics[text.length];
+			
+			for (int i = 0; i < text.length; ++i) {
+				bounds[i] = font.getStringBounds(text[i], graphicsArea.getFontRenderContext());
+				metrics[i] = font.getLineMetrics(text[i], graphicsArea.getFontRenderContext());
+			}
+			
+			// Start location (point is bottom-left
+			int currentTop = point.y;
+			for (int i = 0; i < text.length; ++i) {
+				// Drawing is done in the bottom left corner, so we add the height
+				// of the line, to the current "top" position, to find out where we should
+				// draw.
+				currentTop += bounds[i].getHeight();
+				// However, we need to take into account the overhang in characters like y and g
+				int y = Math.round(currentTop - metrics[i].getDescent());
+				
+				// Now to get where the left should go.
+				int x = point.x;
+				int fontWidth = (int)bounds[i].getWidth();
+				if (position == G15Position.CENTER) {
+					if (emulateComposer) {
+						x = 0;
+					}
+					int midpoint = x+(LCD_WIDTH-x)/2;
+					x = midpoint-(fontWidth/2);
+				} else if (position == G15Position.RIGHT) {
+					x = LCD_WIDTH-fontWidth;
+				}
+				
+				// And draw.
+				graphicsArea.drawString(text[i], x, y);
+			}
 		}
-		
 	}
 	
 	/**
@@ -514,10 +519,12 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		} else if (pixels.length() > (width*height)) {
 			System.out.println("[drawPixels] Recieved more pixels than space to draw. This may look wrong!");
 		}
-		for (int y = 0; y < height ; ++y) {
-			for (int x = 0; x < width ; ++x) {
-				if (x+point.x < LCD_WIDTH && y+point.y < LCD_HEIGHT) {
-					image.setRGB(x+point.x, y+point.y, getRGB(pixels.charAt((y*width)+x)));
+		synchronized (image) {
+			for (int y = 0; y < height ; ++y) {
+				for (int x = 0; x < width ; ++x) {
+					if (x+point.x < LCD_WIDTH && y+point.y < LCD_HEIGHT) {
+						image.setRGB(x+point.x, y+point.y, getRGB(pixels.charAt((y*width)+x)));
+					}
 				}
 			}
 		}
@@ -540,7 +547,9 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void setPixelColour(Point point, boolean isBlack) {
-		image.setRGB(point.x, point.y, convertBoolean(isBlack).getRGB());
+		synchronized (image) {
+			image.setRGB(point.x, point.y, convertBoolean(isBlack).getRGB());
+		}
 	}
 
 	/**
@@ -549,8 +558,10 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void clearScreen(boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.fillRect(0, 0, LCD_WIDTH+1, LCD_HEIGHT+1);
+		synchronized (image) {
+			graphicsArea.setColor(convertBoolean(isBlack));
+			graphicsArea.fillRect(0, 0, LCD_WIDTH+1, LCD_HEIGHT+1);
+		}
 	}
 
 	/**
@@ -561,10 +572,12 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void fillArea(Point point1, Point point2, boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
-		final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
-		graphicsArea.fillRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));
+		synchronized (image) {
+			graphicsArea.setColor(convertBoolean(isBlack));
+			final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
+			final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
+			graphicsArea.fillRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));
+		}
 	}
 
 	/**
@@ -574,9 +587,11 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param point2 Point to finish at for area
 	 */
 	public void reversePixels(Point point1, Point point2) {
-		for (int x = point1.x ; x <= point2.x ; ++x) {
-			for (int y = point1.y; y <= point2.y ; ++y) {
-				setPixelColour(new Point(x, y), (image.getRGB(x, y) == Color.white.getRGB()));
+		synchronized (image) {
+			for (int x = point1.x ; x <= point2.x ; ++x) {
+				for (int y = point1.y; y <= point2.y ; ++y) {
+					setPixelColour(new Point(x, y), (image.getRGB(x, y) == Color.white.getRGB()));
+				}
 			}
 		}
 	}
@@ -590,15 +605,17 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param thickness Thickness of line
 	 */
 	public void drawBox(Point point1, Point point2, boolean isBlack, int thickness) {
-		Stroke oldStroke = graphicsArea.getStroke();
-		graphicsArea.setStroke(new BasicStroke(thickness));
-	
-		graphicsArea.setColor(convertBoolean(isBlack));
-		final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
-		final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
-		graphicsArea.drawRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));
+		synchronized (image) {
+			Stroke oldStroke = graphicsArea.getStroke();
+			graphicsArea.setStroke(new BasicStroke(thickness));
 		
-		graphicsArea.setStroke(oldStroke);
+			graphicsArea.setColor(convertBoolean(isBlack));
+			final int x = (point2.x-point1.x > 0) ? point1.x : point2.x;
+			final int y = (point2.y-point1.y > 0) ? point1.y : point2.y;
+			graphicsArea.drawRect(x, y, Math.abs(point2.x-point1.x), Math.abs(point2.y-point1.y+1));
+			
+			graphicsArea.setStroke(oldStroke);
+		}
 	}
 
 	/**
@@ -609,8 +626,10 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param isBlack True to set to black, false to set to white
 	 */
 	public void drawLine(Point point1, Point point2, boolean isBlack) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.drawLine(point1.x, point1.y, point2.x, point2.y);
+		synchronized (image) {
+			graphicsArea.setColor(convertBoolean(isBlack));
+			graphicsArea.drawLine(point1.x, point1.y, point2.x, point2.y);
+		}
 	}
 
 	/**
@@ -622,11 +641,13 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param filled Is the circle filled or not
 	 */
 	public void drawCircle(Point center, int radius, boolean isBlack, boolean filled) {
-		graphicsArea.setColor(convertBoolean(isBlack));
+		synchronized (image) {
+			graphicsArea.setColor(convertBoolean(isBlack));
 		
-		graphicsArea.drawOval(center.x-radius, center.y-radius, radius*2, radius*2);
-		if (filled) {
 			graphicsArea.drawOval(center.x-radius, center.y-radius, radius*2, radius*2);
+			if (filled) {
+				graphicsArea.fillOval(center.x-radius, center.y-radius, radius*2, radius*2);
+			}
 		}
 	}
 
@@ -639,8 +660,10 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param filled Is the box filled or not
 	 */
 	public void drawRoundedBox(Point point1, Point point2, boolean isBlack, boolean filled) {
-		graphicsArea.setColor(convertBoolean(isBlack));
-		graphicsArea.drawRoundRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y, 8, 8);
+		synchronized (image) {
+			graphicsArea.setColor(convertBoolean(isBlack));
+			graphicsArea.drawRoundRect(point1.x, point1.y, point2.x-point1.x, point2.y-point1.y, 8, 8);
+		}
 	}
 
 	/**
@@ -654,23 +677,25 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 	 * @param barType Type of progress bar
 	 */
 	public void drawProgressBar(Point point1, Point point2, boolean isBlack, int position, int maxPosition, ProgressBarType barType) {
-		final Color background = (isBlack) ? Color.white : Color.black;
-		final Color foreground = (isBlack) ? Color.black : Color.white;
-		
-		final double percent = (100.0/maxPosition)*position;
-		// The 0.01d here solves some rounding problems.
-		// its not ideal, its not right, but it works. stupid floating point crap.
-		final int length = (int)Math.round(0.01d + ((point2.x-(point1.x+1))/100.0)*percent);
-		
-//		if (barType == ProgressBarType.TYPE1) {
-			if (emulateComposer && ((point2.x - point1.x) < 0 || (point2.y - point1.y) < 0)) {
-				// For negative X/Y direction, g15composer doesn't fill the bar...
-				drawBox(new Point(point1.x, point1.y), new Point(point1.x+1+length, point2.y-1), isBlack, 1);
-			} else {
-				fillArea(new Point(point1.x, point1.y), new Point(point1.x+1+length, point2.y), isBlack);
-			}
-			drawBox(new Point(point1.x, point1.y-1), new Point(point2.x, point2.y), isBlack, 1);
-//		}
+		synchronized (image) {
+			final Color background = (isBlack) ? Color.white : Color.black;
+			final Color foreground = (isBlack) ? Color.black : Color.white;
+			
+			final double percent = (100.0/maxPosition)*position;
+			// The 0.01d here solves some rounding problems.
+			// its not ideal, its not right, but it works. stupid floating point crap.
+			final int length = (int)Math.round(0.01d + ((point2.x-(point1.x+1))/100.0)*percent);
+			
+//			if (barType == ProgressBarType.TYPE1) {
+				if (emulateComposer && ((point2.x - point1.x) < 0 || (point2.y - point1.y) < 0)) {
+					// For negative X/Y direction, g15composer doesn't fill the bar...
+					drawBox(new Point(point1.x, point1.y), new Point(point1.x+1+length, point2.y-1), isBlack, 1);
+				} else {
+					fillArea(new Point(point1.x, point1.y), new Point(point1.x+1+length, point2.y), isBlack);
+				}
+				drawBox(new Point(point1.x, point1.y-1), new Point(point2.x, point2.y), isBlack, 1);
+//			}
+		}
 	}
 
 	/**

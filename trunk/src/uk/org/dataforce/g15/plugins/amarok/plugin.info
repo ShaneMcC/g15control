@@ -1,0 +1,8 @@
+mainclass=uk.org.dataforce.g15.plugins.amarok.Amarok
+version=2
+friendlyversion=0.2
+author=Dataforce <Dataforce@Dataforce.org.uk>
+description=Displays amarok information on the LCD
+name=amarok
+nicename=Amarok Plugin
+minversion=0

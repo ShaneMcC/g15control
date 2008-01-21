@@ -1,0 +1,8 @@
+mainclass=uk.org.dataforce.g15.plugins.clock.Clock
+version=2
+friendlyversion=0.2
+author=Dataforce <Dataforce@Dataforce.org.uk>
+description=Simple Clock
+name=clock
+nicename=Simple Clock
+minversion=0
