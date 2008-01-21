@@ -516,7 +516,9 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		}
 		for (int y = 0; y < height ; ++y) {
 			for (int x = 0; x < width ; ++x) {
-				image.setRGB(x+point.x, y+point.y, getRGB(pixels.charAt((y*width)+x)));
+				if (x+point.x < LCD_WIDTH && y+point.y < LCD_HEIGHT) {
+					image.setRGB(x+point.x, y+point.y, getRGB(pixels.charAt((y*width)+x)));
+				}
 			}
 		}
 	}
@@ -659,7 +661,6 @@ public class G15DaemonWrapper extends G15Wrapper implements Runnable {
 		// The 0.01d here solves some rounding problems.
 		// its not ideal, its not right, but it works. stupid floating point crap.
 		final int length = (int)Math.round(0.01d + ((point2.x-(point1.x+1))/100.0)*percent);
-		
 		
 //		if (barType == ProgressBarType.TYPE1) {
 			if (emulateComposer && ((point2.x - point1.x) < 0 || (point2.y - point1.y) < 0)) {
