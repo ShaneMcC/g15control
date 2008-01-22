@@ -3,6 +3,8 @@
 
 = Introduction =
 
+This is a quick guide to preparing your machine and obtaining/compiling/running G15Control.
+
 = Preparing your machine =
 
 First of all, you will need java6 jdk installed (There is no official release of G15Control yet, so you will need to compile everything yourself).
@@ -65,3 +67,25 @@ Config file not found, default created, please edit the file and change the defa
 
 The default config however isn't very useful.
 There is however, a more complete example config which you can find in ~/g15control/examples/g15control.config
+
+= Plugins =
+
+G15Control looks for plugins in ~/.g15control/plugins
+
+If you installed ant-contrib the plugins will have been built and placed into ~/g15control/plugins. The easiest way to use these, is to symlink the 2 directories:
+{{{
+[user@machine:~]$ ln -s ~/g15control/plugins ~/.g15control/
+}}}
+
+Then if you recompile G15Control, the updated plugins will compiled aswell, alternatively you can do:
+{{{
+[user@machine:~]$ mkdir ~/.g15control/plugins
+[user@machine:~]$ cp ~/g15control/plugins/*.jar  ~/.g15control/plugins/
+}}}
+In which case you will need to remember to copy the plugins when you recompile.
+
+= Third Party Plugins =
+
+Third party plugins (such as those from [http://g15.md87.co.uk] (created by Chris Smith)) are distributed as .jar files, and just need to dropped into the plugins directory, and added to the config file (eg `<plugin>smpload.jar</plugin>`).
+
+Once this is done you can go to the main screen of G15Control (press the circle (or MR depending on how you started G15Daemon) button untill you get to the screen that says "G15Control" in the top, and "Menu" at the bottom) and press the menu key (the one underneath the "menu" text). Then you can navigate the menu using the "[<]" and "[>]" keys until you see "Reload Config", press the "OK" key - and any plugins listed in the config will be loaded if not already loaded, plugins can be unloaded using the "Unload Plugin" menu item)
