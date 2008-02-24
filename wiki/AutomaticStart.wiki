@@ -1,4 +1,5 @@
 #summary Automatically start/stop on plug/unplug
+#labels Featured,Phase-Deploy
 
 = Introduction =
 
@@ -23,7 +24,7 @@ sudo /etc/init.d/udev restart
 The script above references the script /usr/local/bin/g15daemon-hotplug, this needs to be created to suit your system, mine looks like this:
 {{{
 #!/bin/bash
-# start/stop g15daemon when plugged/unplugged
+# start/stop g15daemon and g15control when plugged/unplugged
 case $ACTION in
 	"add")
 		# G15 being plugged, start g15daemon
@@ -38,8 +39,7 @@ case $ACTION in
 		# G15 being unplugged, kill g15daemon
 		killall -9 g15daemon
 		# And also G15Control
-		PID=`ps aux | grep -i G15Control | grep -v grep | awk '{print $2}'`
-		kill $PID
+		ps aux | grep G15Control | grep -v grep | awk '{print $2}' | xargs kill -9
 		;;
 	*)
 		exit 0
