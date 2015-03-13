@@ -1,0 +1,1 @@
+G15 Control Application for linux. Currently only linux is supported as it wraps g15composer and g15daemon.
